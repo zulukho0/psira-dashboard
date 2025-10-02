@@ -1,81 +1,84 @@
 import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar.jsx";
 
 function DashboardPage() {
-  const [stats, setStats] = useState({
-    students: 0,
-    courses: 0,
-    results: 0,
-    reports: 0,
-  });
-
+  const [stats, setStats] = useState({ students: 0, courses: 0, results: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [errMsg, setErrMsg] = useState("");
   const token = localStorage.getItem("access_token");
 
   useEffect(() => {
     const fetchStats = async () => {
+      setIsLoading(true);
+      setErrMsg("");
       try {
-        // Fetch students count
-        const studentsRes = await fetch("http://localhost:8000/api/students/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const studentsData = await studentsRes.json();
+        const [studentsRes, coursesRes, resultsRes] = await Promise.all([
+          fetch("http://localhost:8000/api/students/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://localhost:8000/api/courses/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://localhost:8000/api/results/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        // Fetch courses count
-        const coursesRes = await fetch("http://localhost:8000/api/courses/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const coursesData = await coursesRes.json();
+        if (!studentsRes.ok || !coursesRes.ok || !resultsRes.ok) {
+          throw new Error("Failed to load dashboard metrics");
+        }
 
-        // Fetch results count
-        const resultsRes = await fetch("http://localhost:8000/api/results/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const resultsData = await resultsRes.json();
-
-        // Fetch reports count
-        const reportsRes = await fetch("http://localhost:8000/api/reports/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const reportsData = await reportsRes.json();
+        const [studentsData, coursesData, resultsData] = await Promise.all([
+          studentsRes.json(),
+          coursesRes.json(),
+          resultsRes.json(),
+        ]);
 
         setStats({
-          students: studentsData.count || 0,
-          courses: coursesData.count || 0,
-          results: resultsData.count || 0,
-          reports: reportsData.count || 0,
+          students: studentsData?.count || 0,
+          courses: coursesData?.count || 0,
+          results: resultsData?.count || 0,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
+        setErrMsg(error.message || "Error loading dashboard");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchStats();
   }, [token]);
 
+  const Card = ({ title, value }) => (
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <h2 className="text-sm text-gray-600">{title}</h2>
+      {isLoading ? (
+        <div className="mt-2 h-6 bg-gray-100 animate-pulse rounded" />
+      ) : (
+        <p className="text-3xl font-bold">{value}</p>
+      )}
+    </div>
+  );
+
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+      <main className="max-w-6xl mx-auto p-6">
+        <h1 className="text-xl font-semibold mb-4">Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold">Students</h2>
-          <p className="text-3xl font-bold">{stats.students}</p>
-        </div>
+        {errMsg && (
+          <div className="mb-4 p-3 rounded bg-red-50 text-red-700 text-sm">
+            {errMsg}
+          </div>
+        )}
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold">Courses</h2>
-          <p className="text-3xl font-bold">{stats.courses}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card title="Students" value={stats.students} />
+          <Card title="Courses" value={stats.courses} />
+          <Card title="Results" value={stats.results} />
         </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold">Results</h2>
-          <p className="text-3xl font-bold">{stats.results}</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold">Reports</h2>
-          <p className="text-3xl font-bold">{stats.reports}</p>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
