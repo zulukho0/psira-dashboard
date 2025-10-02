@@ -5,10 +5,10 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem('access_token'));
   const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('refresh_token'));
-  const [user, setUser] = useState(null); // optional: could decode JWT if needed
+  const [user, setUser] = useState(null); 
   const [loading, setLoading] = useState(false);
 
-  // When tokens in localStorage change externally, keep in sync (optional enhancement)
+  // When tokens in localStorage change externally, keep in sync
 
   const login = ({ access, refresh }) => {
     localStorage.setItem('access_token', access);
