@@ -33,7 +33,7 @@ function LoginPage() {
 
       const data = await response.json();
 
-      // Update auth context (persists tokens to localStorage)
+      // Save tokens in auth context
       login({ access: data.access, refresh: data.refresh });
 
       // Redirect to dashboard
@@ -46,51 +46,42 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200">
-      <div className="bg-white shadow-2xl rounded-2xl p-8 w-[380px]">
-        {/* App Title / Branding */}
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-2">
-            <img
-              src="/logo.png"
-              alt="Logo Coming"
-              className="w-12 h-12 rounded-full border border-gray-200"
-            />
-          </div>
-          <h1 className="text-3xl font-bold text-blue-700">PSIRAConnect</h1>
-          <p className="text-gray-500 text-sm mt-1">Sign in to continue</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="bg-white shadow-lg rounded-2xl w-full max-w-md p-8">
+        <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">
+          PSIRA Dashboard Login
+        </h2>
 
         {error && (
-          <p className="text-red-600 bg-red-50 p-2 rounded-md text-center mb-4">
-            {error}
-          </p>
+          <p className="text-red-500 text-sm text-center mb-4">{error}</p>
         )}
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-1">
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Username
             </label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter your username"
               autoComplete="username"
               required
             />
           </div>
 
-          <div className="mb-6">
-            <label className="block text-gray-700 font-medium mb-1">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter your password"
               autoComplete="current-password"
               required
             />
@@ -99,18 +90,11 @@ function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-60"
+            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Login"}
           </button>
         </form>
-
-        <p className="text-center text-gray-500 text-sm mt-4">
-          Forgot your password?{" "}
-          <a href="#" className="text-blue-600 hover:underline">
-            Reset here
-          </a>
-        </p>
       </div>
     </div>
   );
