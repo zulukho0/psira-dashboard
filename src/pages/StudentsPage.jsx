@@ -1,28 +1,54 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../api/client'
-import { useAuth } from '../context/AuthContext'
 
 export default function StudentsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const { logout } = useAuth()
+  const [debugInfo, setDebugInfo] = useState({})
+
+  const fetchStudents = async () => {
+    try {
+      // Debug: Check if token exists
+      const token = localStorage.getItem('access_token')
+      setDebugInfo(prev => ({ ...prev, token: token ? 'Present' : 'Missing' }))
+      
+      // Debug: Check API base
+      const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+      setDebugInfo(prev => ({ ...prev, apiBase }))
+      
+      // Build URL
+      const params = new URLSearchParams()
+      if (page) params.append('page', page.toString())
+      if (search) params.append('search', search)
+      
+      const url = `/students/${params.toString() ? '?' + params.toString() : ''}`
+      setDebugInfo(prev => ({ ...prev, url }))
+      
+      const response = await api.get(url)
+      setDebugInfo(prev => ({ ...prev, responseStatus: response.status }))
+      
+      return response.data
+    } catch (error) {
+      setDebugInfo(prev => ({ 
+        ...prev, 
+        error: {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          message: error.message,
+          data: error.response?.data
+        }
+      }))
+      throw error
+    }
+  }
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['students', page, search],
-    queryFn: async () => {
-      const params = new URLSearchParams()
-      if (page) params.append('page', page)
-      if (search) params.append('search', search)
-      
-      const response = await api.get(`/students/?${params.toString()}`)
-      return response.data
-    },
-    retry: false, // Don't retry failed requests
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnReconnect: false, // Don't refetch on reconnect
-    staleTime: 0, // Always consider data stale
-    cacheTime: 0, // Don't cache failed requests
+    queryFn: fetchStudents,
+    retry: 0,
+    refetchOnWindowFocus: false,
+    staleTime: 0,
   })
 
   const handleSearch = (e) => {
@@ -31,35 +57,35 @@ export default function StudentsPage() {
     refetch()
   }
 
-  // Handle authentication errors immediately
-  if (error) {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      logout()
-      window.location.href = '/login'
-      return null // Prevent rendering anything else
-    }
-  }
-
-  // Handle manual refresh
   const handleRefresh = () => {
     refetch()
   }
 
-  // Show loading state only during actual network requests
-  if ((isLoading && !data) || isFetching) {
+  // Loading states
+  if (isLoading && !data) {
     return (
       <div className="loading-container">
         <div className="loading">Loading students...</div>
-        {isFetching && <div className="loading-subtext">Refreshing data</div>}
+        <div className="debug-info">
+          <h3>Debug Info:</h3>
+          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+        </div>
       </div>
     )
   }
 
-  // Handle non-authentication errors
-  if (error && error.response?.status !== 401 && error.response?.status !== 403) {
+  if (error) {
     return (
       <div className="error-container">
-        <p>Error: {error.message}</p>
+        <h2>Error Loading Students</h2>
+        <p><strong>Status:</strong> {error.response?.status}</p>
+        <p><strong>Status Text:</strong> {error.response?.statusText}</p>
+        <p><strong>Message:</strong> {error.message}</p>
+        <div className="debug-info">
+          <h3>Debug Info:</h3>
+          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+          <pre>{JSON.stringify(error.response?.data || error, null, 2)}</pre>
+        </div>
         <button className="btn btn-primary" onClick={handleRefresh}>
           Try Again
         </button>
@@ -82,6 +108,12 @@ export default function StudentsPage() {
           </button>
         </div>
       </div>
+
+      {/* Debug Info */}
+      <details className="debug-details">
+        <summary>Debug Information</summary>
+        <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+      </details>
 
       {/* Search Form */}
       <div className="search-container">
@@ -110,6 +142,13 @@ export default function StudentsPage() {
           )}
         </form>
       </div>
+
+      {/* Refresh indicator */}
+      {isFetching && (
+        <div className="refresh-indicator">
+          Refreshing data...
+        </div>
+      )}
 
       {/* Students Table */}
       <div className="students-table-container">
