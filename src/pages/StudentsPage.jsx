@@ -27,7 +27,7 @@ export default function StudentsPage() {
   if (isLoading) return <div className="loading">Loading students...</div>
   if (error) return <div className="error">Error: {error.message}</div>
 
-  const students = data?.results || data || []
+  const students = data?.results || []
   const hasNextPage = data?.next
   const hasPreviousPage = data?.previous
 
@@ -57,7 +57,6 @@ export default function StudentsPage() {
               onClick={() => {
                 setSearch('')
                 setPage(1)
-                refetch()
               }}
               className="btn btn-outline"
             >
@@ -117,7 +116,7 @@ export default function StudentsPage() {
               Previous
             </button>
             <span className="page-info">
-              Page {page} of {data?.total_pages || Math.ceil((data?.count || 0) / 20)}
+              Page {page}
             </span>
             <button
               className="btn btn-outline"
