@@ -37,8 +37,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
     
-    // If error is 401 and we haven't retried yet
-    if (error?.response?.status === 401 && !originalRequest._retry) {
+    // If error is 401/403 and we haven't retried yet
+    if ((error?.response?.status === 401 || error?.response?.status === 403) && 
+        !originalRequest._retry && 
+        error?.response?.data?.code === 'token_not_valid') {
+      
       // If already refreshing, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -61,6 +64,7 @@ api.interceptors.response.use(
           throw new Error('No refresh token available')
         }
         
+        // Use the base axios instance to avoid interceptors
         const response = await axios.post(`${API_BASE}/api/token/refresh/`, {
           refresh: refreshToken
         })
@@ -71,7 +75,7 @@ api.interceptors.response.use(
         // Update default authorization header
         api.defaults.headers.common.Authorization = `Bearer ${access}`
         
-        // Process queued requests
+        // Process queued requests with new token
         processQueue(null, access)
         
         // Retry original request with new token
