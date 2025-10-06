@@ -24,7 +24,10 @@ function LoginPage() {
       });
 
       if (!response.ok) {
-        const msg = response.status === 401 ? "Invalid username or password" : "Login failed";
+        const msg =
+          response.status === 401
+            ? "Invalid username or password"
+            : "Login failed";
         throw new Error(msg);
       }
 
@@ -43,44 +46,72 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <form onSubmit={handleLogin} className="bg-white p-6 rounded-xl shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
-
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-
-        <div className="mb-3">
-          <label className="block mb-1 font-medium">Username</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            autoComplete="username"
-            required
-          />
+    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200">
+      <div className="bg-white shadow-2xl rounded-2xl p-8 w-[380px]">
+        {/* App Title / Branding */}
+        <div className="text-center mb-6">
+          <div className="flex justify-center mb-2">
+            <img
+              src="/logo.png"
+              alt="Logo Coming"
+              className="w-12 h-12 rounded-full border border-gray-200"
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-blue-700">PSIRAConnect</h1>
+          <p className="text-gray-500 text-sm mt-1">Sign in to continue</p>
         </div>
 
-        <div className="mb-3">
-          <label className="block mb-1 font-medium">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            autoComplete="current-password"
-            required
-          />
-        </div>
+        {error && (
+          <p className="text-red-600 bg-red-50 p-2 rounded-md text-center mb-4">
+            {error}
+          </p>
+        )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
-        >
-          {loading ? "Signing in..." : "Login"}
-        </button>
-      </form>
+        <form onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label className="block text-gray-700 font-medium mb-1">
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="username"
+              required
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-60"
+          >
+            {loading ? "Signing in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="text-center text-gray-500 text-sm mt-4">
+          Forgot your password?{" "}
+          <a href="#" className="text-blue-600 hover:underline">
+            Reset here
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
