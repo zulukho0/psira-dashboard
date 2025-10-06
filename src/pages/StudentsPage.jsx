@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import api from '../api/client'
 
 export default function StudentsPage() {
