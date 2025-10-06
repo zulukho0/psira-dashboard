@@ -1,103 +1,178 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import Navbar from '../components/Navbar.jsx';
-import { getStudents } from '../api/students';
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import api from '../api/client'
+import { useAuth } from '../context/AuthContext'
 
 export default function StudentsPage() {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const { logout } = useAuth()
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['students', { page, search }],
-    queryFn: () => getStudents({ page, search }),
-    keepPreviousData: true,
-  });
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: ['students', page, search],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (page) params.append('page', page)
+      if (search) params.append('search', search)
+      
+      const response = await api.get(`/students/?${params.toString()}`)
+      return response.data
+    },
+    retry: false, // Don't retry failed requests
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnReconnect: false, // Don't refetch on reconnect
+    staleTime: 0, // Always consider data stale
+    cacheTime: 0, // Don't cache failed requests
+  })
 
-  const results = data?.results ?? [];
-  const count = data?.count ?? 0;
-  const pageSize = 20;
-  const totalPages = Math.max(1, Math.ceil(count / pageSize));
+  const handleSearch = (e) => {
+    e.preventDefault()
+    setPage(1)
+    refetch()
+  }
+
+  // Handle authentication errors immediately
+  if (error) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      logout()
+      window.location.href = '/login'
+      return null // Prevent rendering anything else
+    }
+  }
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    refetch()
+  }
+
+  // Show loading state only during actual network requests
+  if ((isLoading && !data) || isFetching) {
+    return (
+      <div className="loading-container">
+        <div className="loading">Loading students...</div>
+        {isFetching && <div className="loading-subtext">Refreshing data</div>}
+      </div>
+    )
+  }
+
+  // Handle non-authentication errors
+  if (error && error.response?.status !== 401 && error.response?.status !== 403) {
+    return (
+      <div className="error-container">
+        <p>Error: {error.message}</p>
+        <button className="btn btn-primary" onClick={handleRefresh}>
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
+  const students = data?.results || []
+  const hasNextPage = data?.next
+  const hasPreviousPage = data?.previous
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      <main className="max-w-6xl mx-auto p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Students</h1>
-          <div className="flex gap-2">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or ID"
-              className="border border-gray-300 rounded-md px-3 py-2"
-            />
-          </div>
+    <div className="students-page">
+      <div className="page-header">
+        <h1>Students</h1>
+        <div className="header-actions">
+          <button className="btn btn-primary">Add Student</button>
+          <button className="btn btn-outline" onClick={handleRefresh}>
+            Refresh
+          </button>
         </div>
+      </div>
 
-        {isLoading && <div>Loading students...</div>}
-        {isError && <div className="text-red-600">Error: {error?.message || 'Failed to load'}</div>}
-
-        {!isLoading && !isError && results.length === 0 && (
-          <div className="bg-white p-6 rounded-md shadow">No students found.</div>
-        )}
-
-        {!isLoading && !isError && results.length > 0 && (
-          <div className="bg-white rounded-md shadow overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-4 py-2 border-b">ID</th>
-                  <th className="text-left px-4 py-2 border-b">First Name</th>
-                  <th className="text-left px-4 py-2 border-b">Second Name</th>
-                  <th className="text-left px-4 py-2 border-b">Last Name</th>
-                  <th className="text-left px-4 py-2 border-b">ID Number</th>
-                  <th className="text-left px-4 py-2 border-b">Contact</th>
-                  <th className="text-left px-4 py-2 border-b">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((s) => (
-                  <tr key={s.id} className="odd:bg-white even:bg-gray-50">
-                    <td className="px-4 py-2 border-b">{s.id}</td>
-                    <td className="px-4 py-2 border-b">{s.first_name}</td>
-                    <td className="px-4 py-2 border-b">{s.second_name || '-'}</td>
-                    <td className="px-4 py-2 border-b">{s.last_name}</td>
-                    <td className="px-4 py-2 border-b">{s.id_number}</td>
-                    <td className="px-4 py-2 border-b">{s.contact_number || '-'}</td>
-                    <td className="px-4 py-2 border-b">
-                      <div className="flex gap-2">
-                        <button className="px-2 py-1 text-sm bg-gray-100 rounded">Edit</button>
-                        <button className="px-2 py-1 text-sm bg-red-100 text-red-700 rounded">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-gray-600">Total: {count}</div>
-          <div className="flex gap-2">
+      {/* Search Form */}
+      <div className="search-container">
+        <form onSubmit={handleSearch} className="search-form">
+          <input
+            type="text"
+            placeholder="Search students..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+          />
+          <button type="submit" className="btn btn-primary">
+            Search
+          </button>
+          {(search || page > 1) && (
             <button
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-2 border rounded disabled:opacity-50"
+              type="button"
+              onClick={() => {
+                setSearch('')
+                setPage(1)
+              }}
+              className="btn btn-outline"
             >
-              Prev
+              Clear
             </button>
-            <span className="px-2 py-2 text-sm">Page {page} of {totalPages}</span>
+          )}
+        </form>
+      </div>
+
+      {/* Students Table */}
+      <div className="students-table-container">
+        <table className="students-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>ID Number</th>
+              <th>Contact</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.length > 0 ? (
+              students.map(student => (
+                <tr key={student.id}>
+                  <td>{student.first_name} {student.last_name}</td>
+                  <td>{student.id_number}</td>
+                  <td>{student.contact_number}</td>
+                  <td>
+                    <button className="btn btn-sm btn-outline">Edit</button>
+                    <button className="btn btn-sm btn-danger">Delete</button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="text-center">
+                  No students found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      {(hasNextPage || hasPreviousPage || data?.count > 0) && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            Showing {students.length} of {data?.count || 0} students
+          </div>
+          <div className="pagination-controls">
             <button
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3 py-2 border rounded disabled:opacity-50"
+              className="btn btn-outline"
+              onClick={() => setPage(page - 1)}
+              disabled={!hasPreviousPage || page <= 1}
+            >
+              Previous
+            </button>
+            <span className="page-info">
+              Page {page}
+            </span>
+            <button
+              className="btn btn-outline"
+              onClick={() => setPage(page + 1)}
+              disabled={!hasNextPage}
             >
               Next
             </button>
           </div>
         </div>
-      </main>
+      )}
     </div>
-  );
+  )
 }
