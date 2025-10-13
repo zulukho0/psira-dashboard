@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar.jsx";
 
 function DashboardPage() {
-  const [stats, setStats] = useState({ students: 0, courses: 0, results: 0 });
+  const [stats, setStats] = useState({
+    students: 0,
+    courses: 0,
+    instructors: 0,
+    results: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
   const token = localStorage.getItem("access_token");
@@ -12,31 +17,43 @@ function DashboardPage() {
       setIsLoading(true);
       setErrMsg("");
       try {
-        const [studentsRes, coursesRes, resultsRes] = await Promise.all([
-          fetch("http://localhost:8000/api/students/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("http://localhost:8000/api/courses/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("http://localhost:8000/api/results/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+        const [studentsRes, coursesRes, instructorsRes, resultsRes] =
+          await Promise.all([
+            fetch("http://localhost:8000/api/students/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            fetch("http://localhost:8000/api/courses/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            fetch("http://localhost:8000/api/instructors/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            fetch("http://localhost:8000/api/results/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
 
-        if (!studentsRes.ok || !coursesRes.ok || !resultsRes.ok) {
+        if (
+          !studentsRes.ok ||
+          !coursesRes.ok ||
+          !instructorsRes.ok ||
+          !resultsRes.ok
+        ) {
           throw new Error("Failed to load dashboard metrics");
         }
 
-        const [studentsData, coursesData, resultsData] = await Promise.all([
-          studentsRes.json(),
-          coursesRes.json(),
-          resultsRes.json(),
-        ]);
+        const [studentsData, coursesData, instructorsData, resultsData] =
+          await Promise.all([
+            studentsRes.json(),
+            coursesRes.json(),
+            instructorsRes.json(),
+            resultsRes.json(),
+          ]);
 
         setStats({
           students: studentsData?.count || 0,
           courses: coursesData?.count || 0,
+          instructors: instructorsData?.count || 0,
           results: resultsData?.count || 0,
         });
       } catch (error) {
@@ -73,9 +90,10 @@ function DashboardPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card title="Students" value={stats.students} />
           <Card title="Courses" value={stats.courses} />
+          <Card title="Instructors" value={stats.instructors} />
           <Card title="Results" value={stats.results} />
         </div>
       </main>
