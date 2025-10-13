@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import Navbar from '../../components/Navbar.jsx'
-import { fetchStudents, createStudent, updateStudent, deleteStudent } from '../students/students.api.js'
+import Navbar from '../../../components/Navbar.jsx'
+import { fetchStudents, createStudent, updateStudent, deleteStudent } from '../students.api.js'
 import StudentModal from '../components/StudentModal.jsx';
 
 export default function StudentsPage() {
