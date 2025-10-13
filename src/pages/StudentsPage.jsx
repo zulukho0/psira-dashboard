@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import api from '../api/client'
 
 export default function StudentsPage() {
@@ -9,36 +9,25 @@ export default function StudentsPage() {
 
   const fetchStudents = async () => {
     try {
-      // Debug: Check if token exists
       const token = localStorage.getItem('access_token')
-      setDebugInfo(prev => ({ ...prev, token: token ? 'Present' : 'Missing' }))
-      
-      // Debug: Check API base
       const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
-      setDebugInfo(prev => ({ ...prev, apiBase }))
-      
-      // Build URL
       const params = new URLSearchParams()
       if (page) params.append('page', page.toString())
       if (search) params.append('search', search)
-      
       const url = `/students/${params.toString() ? '?' + params.toString() : ''}`
-      setDebugInfo(prev => ({ ...prev, url }))
-      
+
       const response = await api.get(url)
-      setDebugInfo(prev => ({ ...prev, responseStatus: response.status }))
-      
+      setDebugInfo({ token: !!token, apiBase, url, responseStatus: response.status })
       return response.data
     } catch (error) {
-      setDebugInfo(prev => ({ 
-        ...prev, 
+      setDebugInfo({
+        ...debugInfo,
         error: {
           status: error.response?.status,
-          statusText: error.response?.statusText,
           message: error.message,
           data: error.response?.data
         }
-      }))
+      })
       throw error
     }
   }
@@ -61,71 +50,69 @@ export default function StudentsPage() {
     refetch()
   }
 
-  // Loading states
+  const students = data?.results || []
+  const hasNextPage = data?.next
+  const hasPreviousPage = data?.previous
+
   if (isLoading && !data) {
     return (
-      <div className="loading-container">
-        <div className="loading">Loading students...</div>
-        <div className="debug-info">
-          <h3>Debug Info:</h3>
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen text-gray-600">
+        <div className="animate-pulse text-lg font-medium">Loading students...</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="error-container">
-        <h2>Error Loading Students</h2>
-        <p><strong>Status:</strong> {error.response?.status}</p>
-        <p><strong>Status Text:</strong> {error.response?.statusText}</p>
-        <p><strong>Message:</strong> {error.message}</p>
-        <div className="debug-info">
-          <h3>Debug Info:</h3>
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-          <pre>{JSON.stringify(error.response?.data || error, null, 2)}</pre>
-        </div>
-        <button className="btn btn-primary" onClick={handleRefresh}>
+      <div className="flex flex-col items-center justify-center min-h-screen text-center space-y-3">
+        <h2 className="text-2xl font-semibold text-red-600">Error Loading Students</h2>
+        <p className="text-gray-500">Status: {error.response?.status || 'Unknown'}</p>
+        <p className="text-gray-500">Message: {error.message}</p>
+        <button
+          onClick={handleRefresh}
+          className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow"
+        >
           Try Again
         </button>
       </div>
     )
   }
 
-  const students = data?.results || []
-  const hasNextPage = data?.next
-  const hasPreviousPage = data?.previous
-
   return (
-    <div className="students-page">
-      <div className="page-header">
-        <h1>Students</h1>
-        <div className="header-actions">
-          <button className="btn btn-primary">Add Student</button>
-          <button className="btn btn-outline" onClick={handleRefresh}>
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h1 className="text-3xl font-bold text-gray-800">Students</h1>
+        <div className="flex gap-2">
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow">
+            Add Student
+          </button>
+          <button
+            onClick={handleRefresh}
+            className="border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-md"
+          >
             Refresh
           </button>
         </div>
       </div>
 
-      {/* Debug Info */}
-      <details className="debug-details">
-        <summary>Debug Information</summary>
-        <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-      </details>
-
-      {/* Search Form */}
-      <div className="search-container">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            placeholder="Search students..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input"
-          />
-          <button type="submit" className="btn btn-primary">
+      {/* Search */}
+      <form
+        onSubmit={handleSearch}
+        className="flex flex-col sm:flex-row items-center gap-2"
+      >
+        <input
+          type="text"
+          placeholder="Search students..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-2 w-full sm:w-1/2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+          >
             Search
           </button>
           {(search || page > 1) && (
@@ -135,48 +122,46 @@ export default function StudentsPage() {
                 setSearch('')
                 setPage(1)
               }}
-              className="btn btn-outline"
+              className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-md"
             >
               Clear
             </button>
           )}
-        </form>
-      </div>
-
-      {/* Refresh indicator */}
-      {isFetching && (
-        <div className="refresh-indicator">
-          Refreshing data...
         </div>
+      </form>
+
+      {/* Refresh Indicator */}
+      {isFetching && (
+        <div className="text-sm text-gray-500 italic">Refreshing data...</div>
       )}
 
-      {/* Students Table */}
-      <div className="students-table-container">
-        <table className="students-table">
-          <thead>
+      {/* Table */}
+      <div className="overflow-x-auto bg-white shadow rounded-lg">
+        <table className="min-w-full border-collapse">
+          <thead className="bg-gray-50 border-b">
             <tr>
-              <th>Name</th>
-              <th>ID Number</th>
-              <th>Contact</th>
-              <th>Actions</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Name</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">ID Number</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Contact</th>
+              <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
             {students.length > 0 ? (
               students.map(student => (
-                <tr key={student.id}>
-                  <td>{student.first_name} {student.last_name}</td>
-                  <td>{student.id_number}</td>
-                  <td>{student.contact_number}</td>
-                  <td>
-                    <button className="btn btn-sm btn-outline">Edit</button>
-                    <button className="btn btn-sm btn-danger">Delete</button>
+                <tr key={student.id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-2">{student.first_name} {student.last_name}</td>
+                  <td className="px-4 py-2">{student.id_number}</td>
+                  <td className="px-4 py-2">{student.contact_number}</td>
+                  <td className="px-4 py-2 text-center space-x-2">
+                    <button className="text-blue-600 hover:underline text-sm">Edit</button>
+                    <button className="text-red-600 hover:underline text-sm">Delete</button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="text-center">
+                <td colSpan="4" className="text-center py-6 text-gray-500">
                   No students found
                 </td>
               </tr>
@@ -186,32 +171,36 @@ export default function StudentsPage() {
       </div>
 
       {/* Pagination */}
-      {(hasNextPage || hasPreviousPage || data?.count > 0) && (
-        <div className="pagination-container">
-          <div className="pagination-info">
+      {(data?.count > 0) && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="text-gray-600 text-sm">
             Showing {students.length} of {data?.count || 0} students
-          </div>
-          <div className="pagination-controls">
+          </p>
+          <div className="flex gap-2">
             <button
-              className="btn btn-outline"
               onClick={() => setPage(page - 1)}
               disabled={!hasPreviousPage || page <= 1}
+              className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
             >
               Previous
             </button>
-            <span className="page-info">
-              Page {page}
-            </span>
+            <span className="text-sm text-gray-700">Page {page}</span>
             <button
-              className="btn btn-outline"
               onClick={() => setPage(page + 1)}
               disabled={!hasNextPage}
+              className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
             >
               Next
             </button>
           </div>
         </div>
       )}
+
+      {/* Debug Info (Collapsible) */}
+      <details className="mt-6 bg-gray-50 rounded-md p-3 text-sm text-gray-600">
+        <summary className="cursor-pointer font-semibold">Debug Information</summary>
+        <pre className="overflow-x-auto mt-2">{JSON.stringify(debugInfo, null, 2)}</pre>
+      </details>
     </div>
   )
 }
