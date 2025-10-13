@@ -7,6 +7,7 @@ function DashboardPage() {
     courses: 0,
     instructors: 0,
     results: 0,
+    classes: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
@@ -17,7 +18,7 @@ function DashboardPage() {
       setIsLoading(true);
       setErrMsg("");
       try {
-        const [studentsRes, coursesRes, instructorsRes, resultsRes] =
+        const [studentsRes, coursesRes, instructorsRes, resultsRes, classesRes] =
           await Promise.all([
             fetch("http://localhost:8000/api/students/", {
               headers: { Authorization: `Bearer ${token}` },
@@ -31,30 +32,41 @@ function DashboardPage() {
             fetch("http://localhost:8000/api/results/", {
               headers: { Authorization: `Bearer ${token}` },
             }),
+            fetch("http://localhost:8000/api/classes/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
           ]);
 
         if (
           !studentsRes.ok ||
           !coursesRes.ok ||
           !instructorsRes.ok ||
-          !resultsRes.ok
+          !resultsRes.ok ||
+          !classesRes.ok
         ) {
           throw new Error("Failed to load dashboard metrics");
         }
 
-        const [studentsData, coursesData, instructorsData, resultsData] =
-          await Promise.all([
-            studentsRes.json(),
-            coursesRes.json(),
-            instructorsRes.json(),
-            resultsRes.json(),
-          ]);
+        const [
+          studentsData,
+          coursesData,
+          instructorsData,
+          resultsData,
+          classesData,
+        ] = await Promise.all([
+          studentsRes.json(),
+          coursesRes.json(),
+          instructorsRes.json(),
+          resultsRes.json(),
+          classesRes.json(),
+        ]);
 
         setStats({
           students: studentsData?.count || 0,
           courses: coursesData?.count || 0,
           instructors: instructorsData?.count || 0,
           results: resultsData?.count || 0,
+          classes: classesData?.count || 0,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -90,10 +102,11 @@ function DashboardPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <Card title="Students" value={stats.students} />
           <Card title="Courses" value={stats.courses} />
           <Card title="Instructors" value={stats.instructors} />
+          <Card title="Classes" value={stats.classes} />
           <Card title="Results" value={stats.results} />
         </div>
       </main>
