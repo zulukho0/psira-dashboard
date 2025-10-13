@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import Navbar from '../../../components/Navbar.jsx'
+import InstructorModal from '../components/InstructorModal.jsx'
 import {
   fetchInstructors,
   createInstructor,
   updateInstructor,
-  deleteInstructor
+  deleteInstructor,
 } from '../instructors.api.js'
-import InstructorModal from '../components/InstructorModal.jsx'
 
 export default function InstructorsPage() {
   const [page, setPage] = useState(1)
@@ -19,39 +19,35 @@ export default function InstructorsPage() {
     last_name: '',
     psira_number: '',
     contact_number: '',
-    signature: null
+    signature: null,
   })
 
-  // Fetch instructors
-  const { data, isLoading, isFetching, error, refetch } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['instructors', page, search],
     queryFn: () => fetchInstructors({ page, search }),
-    retry: 0,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   })
 
   const instructors = data?.results || []
   const hasNextPage = data?.next
   const hasPreviousPage = data?.previous
 
-  // Handlers
   const handleSearch = (e) => {
     e.preventDefault()
     setPage(1)
     refetch()
   }
 
-  const handleRefresh = () => refetch()
-
   const openModal = (instructor = null) => {
     if (instructor) {
       setEditingInstructor(instructor)
       setFormData({
+        id: instructor.id,
         first_name: instructor.first_name,
         last_name: instructor.last_name,
         psira_number: instructor.psira_number,
         contact_number: instructor.contact_number,
-        signature: null
+        signature: instructor.signature || null,
       })
     } else {
       setEditingInstructor(null)
@@ -60,13 +56,16 @@ export default function InstructorsPage() {
         last_name: '',
         psira_number: '',
         contact_number: '',
-        signature: null
+        signature: null,
       })
     }
     setIsModalOpen(true)
   }
 
-  const closeModal = () => setIsModalOpen(false)
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setEditingInstructor(null)
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -81,17 +80,16 @@ export default function InstructorsPage() {
       } else {
         await createInstructor(formData)
       }
-      refetch()
       closeModal()
+      refetch()
     } catch (err) {
       console.error('Error saving instructor:', err)
     }
   }
 
   const handleDelete = async (id, firstName, lastName) => {
-    const confirmDelete = window.confirm(`Are you sure you want to delete ${firstName} ${lastName}?`)
+    const confirmDelete = window.confirm(`Delete ${firstName} ${lastName}?`)
     if (!confirmDelete) return
-
     try {
       await deleteInstructor(id)
       refetch()
@@ -100,31 +98,27 @@ export default function InstructorsPage() {
     }
   }
 
-  if (isLoading && !data) return (
-    <>
-      <Navbar />
-      <div className="flex flex-col items-center justify-center min-h-screen text-gray-600">
-        <div className="animate-pulse text-lg font-medium">Loading instructors...</div>
-      </div>
-    </>
-  )
+  if (isLoading) {
+    return (
+      <>
+        <Navbar />
+        <div className="flex items-center justify-center min-h-screen text-gray-600">
+          Loading instructors...
+        </div>
+      </>
+    )
+  }
 
-  if (error) return (
-    <>
-      <Navbar />
-      <div className="flex flex-col items-center justify-center min-h-screen text-center space-y-3">
-        <h2 className="text-2xl font-semibold text-red-600">Error Loading Instructors</h2>
-        <p className="text-gray-500">Status: {error.response?.status || 'Unknown'}</p>
-        <p className="text-gray-500">Message: {error.message}</p>
-        <button
-          onClick={handleRefresh}
-          className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow"
-        >
-          Try Again
-        </button>
-      </div>
-    </>
-  )
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <div className="flex items-center justify-center min-h-screen text-red-600">
+          Error loading instructors: {error.message}
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -141,7 +135,7 @@ export default function InstructorsPage() {
               Add Instructor
             </button>
             <button
-              onClick={handleRefresh}
+              onClick={() => refetch()}
               className="border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-md"
             >
               Refresh
@@ -150,10 +144,7 @@ export default function InstructorsPage() {
         </div>
 
         {/* Search */}
-        <form
-          onSubmit={handleSearch}
-          className="flex flex-col sm:flex-row items-center gap-2"
-        >
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-2">
           <input
             type="text"
             placeholder="Search instructors..."
@@ -162,16 +153,16 @@ export default function InstructorsPage() {
             className="border border-gray-300 rounded-md px-3 py-2 w-full sm:w-1/2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="flex gap-2">
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-            >
+            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
               Search
             </button>
             {(search || page > 1) && (
               <button
                 type="button"
-                onClick={() => { setSearch(''); setPage(1) }}
+                onClick={() => {
+                  setSearch('')
+                  setPage(1)
+                }}
                 className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-md"
               >
                 Clear
@@ -180,37 +171,50 @@ export default function InstructorsPage() {
           </div>
         </form>
 
-        {/* Refresh Indicator */}
-        {isFetching && <div className="text-sm text-gray-500 italic">Refreshing data...</div>}
-
-        {/* Instructors Table */}
+        {/* Table */}
         <div className="overflow-x-auto bg-white shadow rounded-lg">
           <table className="min-w-full border-collapse">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Name</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">PSIRA Number</th>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">PSIRA No</th>
                 <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Contact</th>
+                <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">Signature</th>
                 <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {instructors.length > 0 ? (
-                instructors.map(instr => (
-                  <tr key={instr.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">{instr.first_name} {instr.last_name}</td>
-                    <td className="px-4 py-2">{instr.psira_number}</td>
-                    <td className="px-4 py-2">{instr.contact_number}</td>
+                instructors.map((instructor) => (
+                  <tr key={instructor.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-2">
+                      {instructor.first_name} {instructor.last_name}
+                    </td>
+                    <td className="px-4 py-2">{instructor.psira_number}</td>
+                    <td className="px-4 py-2">{instructor.contact_number}</td>
+                    <td className="px-4 py-2 text-center">
+                      {instructor.signature ? (
+                        <img
+                          src={instructor.signature}
+                          alt="Signature"
+                          className="h-10 w-auto mx-auto border rounded-sm object-contain"
+                        />
+                      ) : (
+                        <span className="text-gray-400 text-sm italic">No Signature</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-center space-x-2">
                       <button
                         className="text-blue-600 hover:underline text-sm"
-                        onClick={() => openModal(instr)}
+                        onClick={() => openModal(instructor)}
                       >
                         Edit
                       </button>
                       <button
                         className="text-red-600 hover:underline text-sm"
-                        onClick={() => handleDelete(instr.id, instr.first_name, instr.last_name)}
+                        onClick={() =>
+                          handleDelete(instructor.id, instructor.first_name, instructor.last_name)
+                        }
                       >
                         Delete
                       </button>
@@ -219,7 +223,7 @@ export default function InstructorsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="text-center py-6 text-gray-500">
+                  <td colSpan="5" className="text-center py-6 text-gray-500">
                     No instructors found
                   </td>
                 </tr>
@@ -229,7 +233,7 @@ export default function InstructorsPage() {
         </div>
 
         {/* Pagination */}
-        {(data?.count > 0) && (
+        {data?.count > 0 && (
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <p className="text-gray-600 text-sm">
               Showing {instructors.length} of {data?.count || 0} instructors
@@ -254,7 +258,7 @@ export default function InstructorsPage() {
           </div>
         )}
 
-        {/* Instructor Modal */}
+        {/* Modal */}
         <InstructorModal
           isOpen={isModalOpen}
           onClose={closeModal}
