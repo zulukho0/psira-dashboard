@@ -18,7 +18,6 @@ export default function ClassesPage() {
     instructor: ''
   });
 
-  // Fetch classes
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['classes', page, search],
     queryFn: () => fetchClasses({ page, search }),
@@ -30,14 +29,12 @@ export default function ClassesPage() {
   const hasNextPage = !!data?.next;
   const hasPreviousPage = !!data?.previous;
 
-  // Search handler
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
     refetch();
   };
 
-  // Modal handlers
   const openModal = (classItem = null) => {
     if (classItem) {
       setEditingClass(classItem);
@@ -62,9 +59,9 @@ export default function ClassesPage() {
     }
     setIsModalOpen(true);
   };
+
   const closeModal = () => setIsModalOpen(false);
 
-  // Form handlers
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -101,9 +98,7 @@ export default function ClassesPage() {
     return (
       <>
         <Navbar />
-        <div className="flex justify-center items-center min-h-screen">
-          Loading classes...
-        </div>
+        <div className="flex justify-center items-center min-h-screen">Loading classes...</div>
       </>
     );
 
@@ -148,9 +143,7 @@ export default function ClassesPage() {
         </form>
 
         {isFetching && (
-          <div className="text-sm text-gray-500 italic mb-2">
-            Refreshing data...
-          </div>
+          <div className="text-sm text-gray-500 italic mb-2">Refreshing data...</div>
         )}
 
         {/* Table */}
@@ -175,8 +168,8 @@ export default function ClassesPage() {
                     <td className="px-4 py-2">{cls.batch_number}</td>
                     <td className="px-4 py-2">{cls.start_date}</td>
                     <td className="px-4 py-2">{cls.end_date}</td>
-                    <td className="px-4 py-2">{cls.course_name}</td>
-                    <td className="px-4 py-2">{cls.instructor_name}</td>
+                    <td className="px-4 py-2">{cls.course}</td>
+                    <td className="px-4 py-2">{cls.instructor}</td>
                     <td className="px-4 py-2 text-center space-x-2">
                       <button
                         className="text-blue-600 hover:underline text-sm"
@@ -195,10 +188,7 @@ export default function ClassesPage() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="7"
-                    className="text-center py-6 text-gray-500"
-                  >
+                  <td colSpan="7" className="text-center py-6 text-gray-500">
                     No classes found
                   </td>
                 </tr>
@@ -239,7 +229,7 @@ export default function ClassesPage() {
           onClose={closeModal}
           onSubmit={handleSubmit}
           formData={formData}
-          onChange={handleChange}
+          handleChange={handleChange}
           isEdit={!!editingClass}
         />
       </div>
