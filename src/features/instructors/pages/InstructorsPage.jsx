@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import Navbar from '../../../components/Navbar.jsx';
 import { fetchInstructors, createInstructor, updateInstructor, deleteInstructor } from '../instructors.api.js';
-import InstructorModal from '../components/InstructorModal.js';
-
+import InstructorModal from '../components/InstructorModal.jsx';
 
 export default function InstructorsPage() {
   const [page, setPage] = useState(1);
