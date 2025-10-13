@@ -74,18 +74,6 @@ export default function ClassModal({ isOpen, onClose, onSubmit, formData, handle
             />
           </div>
 
-          {/* Batch Number */}
-          <div>
-            <label className="block text-sm font-medium">Batch Number</label>
-            <input
-              type="text"
-              name="batch_number"
-              value={formData.batch_number}
-              onChange={handleChange}
-              className="border border-gray-300 w-full px-3 py-2 rounded-md"
-              required
-            />
-          </div>
 
           {/* Dates */}
           <div className="flex gap-4">
