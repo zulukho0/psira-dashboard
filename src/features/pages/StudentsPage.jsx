@@ -1,41 +1,35 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import api from '../../api/client'
-import Navbar from '../../components/Navbar'  // ✅ import the Navbar
+import api from '../../api/client.js';
+import Navbar from '../../components/Navbar.jsx';
+import { fetchStudents, createStudent } from '../students/students.api.js';
 
 export default function StudentsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [debugInfo, setDebugInfo] = useState({})
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [newStudent, setNewStudent] = useState({
+    first_name: '',
+    last_name: '',
+    id_number: '',
+    contact_number: ''
+  })
 
-  const fetchStudents = async () => {
+  const fetchData = async () => {
     try {
-      const token = localStorage.getItem('access_token')
-      const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
-      const params = new URLSearchParams()
-      if (page) params.append('page', page.toString())
-      if (search) params.append('search', search)
-      const url = `/students/${params.toString() ? '?' + params.toString() : ''}`
-
-      const response = await api.get(url)
-      setDebugInfo({ token: !!token, apiBase, url, responseStatus: response.status })
-      return response.data
+      const data = await fetchStudents({ page, search })
+      setDebugInfo({ page, search, resultsCount: data.results.length })
+      return data
     } catch (error) {
-      setDebugInfo({
-        ...debugInfo,
-        error: {
-          status: error.response?.status,
-          message: error.message,
-          data: error.response?.data
-        }
-      })
+      setDebugInfo({ ...debugInfo, error })
       throw error
     }
   }
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['students', page, search],
-    queryFn: fetchStudents,
+    queryFn: fetchData,
     retry: 0,
     refetchOnWindowFocus: false,
     staleTime: 0,
@@ -49,6 +43,18 @@ export default function StudentsPage() {
 
   const handleRefresh = () => {
     refetch()
+  }
+
+  const handleCreateStudent = async (e) => {
+    e.preventDefault()
+    try {
+      await createStudent(newStudent)
+      setIsCreateOpen(false)
+      setNewStudent({ first_name: '', last_name: '', id_number: '', contact_number: '' })
+      refetch()
+    } catch (err) {
+      console.error('Error creating student:', err)
+    }
   }
 
   const students = data?.results || []
@@ -72,7 +78,6 @@ export default function StudentsPage() {
         <Navbar />
         <div className="flex flex-col items-center justify-center min-h-screen text-center space-y-3">
           <h2 className="text-2xl font-semibold text-red-600">Error Loading Students</h2>
-          <p className="text-gray-500">Status: {error.response?.status || 'Unknown'}</p>
           <p className="text-gray-500">Message: {error.message}</p>
           <button
             onClick={handleRefresh}
@@ -87,14 +92,17 @@ export default function StudentsPage() {
 
   return (
     <>
-      <Navbar /> {/* ✅ Navbar at top */}
+      <Navbar />
 
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-bold text-gray-800">Students</h1>
           <div className="flex gap-2">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow">
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow"
+            >
               Add Student
             </button>
             <button
@@ -128,10 +136,7 @@ export default function StudentsPage() {
             {(search || page > 1) && (
               <button
                 type="button"
-                onClick={() => {
-                  setSearch('')
-                  setPage(1)
-                }}
+                onClick={() => { setSearch(''); setPage(1) }}
                 className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-md"
               >
                 Clear
@@ -143,6 +148,64 @@ export default function StudentsPage() {
         {/* Refresh Indicator */}
         {isFetching && (
           <div className="text-sm text-gray-500 italic">Refreshing data...</div>
+        )}
+
+        {/* Create Student Modal */}
+        {isCreateOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">Add New Student</h2>
+              <form onSubmit={handleCreateStudent} className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={newStudent.first_name}
+                  onChange={(e) => setNewStudent({ ...newStudent, first_name: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={newStudent.last_name}
+                  onChange={(e) => setNewStudent({ ...newStudent, last_name: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="ID Number"
+                  value={newStudent.id_number}
+                  onChange={(e) => setNewStudent({ ...newStudent, id_number: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Contact Number"
+                  value={newStudent.contact_number}
+                  onChange={(e) => setNewStudent({ ...newStudent, contact_number: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <div className="flex justify-end gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateOpen(false)}
+                    className="px-4 py-2 border rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded"
+                  >
+                    Create
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
 
         {/* Table */}
