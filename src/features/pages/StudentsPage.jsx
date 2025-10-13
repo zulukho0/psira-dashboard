@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import api from '../../api/client.js';
 import Navbar from '../../components/Navbar.jsx';
-import { fetchStudents, createStudent } from '../students/students.api.js';
+import { fetchStudents, createStudent, updateStudent } from '../students/students.api.js';
 
 export default function StudentsPage() {
   const [page, setPage] = useState(1)
@@ -15,24 +15,32 @@ export default function StudentsPage() {
     id_number: '',
     contact_number: ''
   })
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editingStudent, setEditingStudent] = useState(null)
 
-  const fetchData = async () => {
+  // Fetch students
+  const fetchStudentsWrapper = async () => {
     try {
       const data = await fetchStudents({ page, search })
       setDebugInfo({ page, search, resultsCount: data.results.length })
       return data
     } catch (error) {
-      setDebugInfo({ ...debugInfo, error })
+      setDebugInfo({
+        ...debugInfo,
+        error: {
+          message: error.message,
+          data: error.response?.data
+        }
+      })
       throw error
     }
   }
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['students', page, search],
-    queryFn: fetchData,
+    queryFn: fetchStudentsWrapper,
     retry: 0,
-    refetchOnWindowFocus: false,
-    staleTime: 0,
+    refetchOnWindowFocus: false
   })
 
   const handleSearch = (e) => {
@@ -41,11 +49,14 @@ export default function StudentsPage() {
     refetch()
   }
 
-  const handleRefresh = () => {
-    refetch()
-  }
+  const handleRefresh = () => refetch()
 
-  const handleCreateStudent = async (e) => {
+  const students = data?.results || []
+  const hasNextPage = !!data?.next
+  const hasPreviousPage = !!data?.previous
+
+  // Create student
+  const handleCreateSubmit = async (e) => {
     e.preventDefault()
     try {
       await createStudent(newStudent)
@@ -57,9 +68,18 @@ export default function StudentsPage() {
     }
   }
 
-  const students = data?.results || []
-  const hasNextPage = data?.next
-  const hasPreviousPage = data?.previous
+  // Update student
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await updateStudent(editingStudent.id, editingStudent)
+      setIsEditOpen(false)
+      setEditingStudent(null)
+      refetch()
+    } catch (err) {
+      console.error('Error updating student:', err)
+    }
+  }
 
   if (isLoading && !data) {
     return (
@@ -150,12 +170,77 @@ export default function StudentsPage() {
           <div className="text-sm text-gray-500 italic">Refreshing data...</div>
         )}
 
+        {/* Table */}
+        <div className="overflow-x-auto bg-white shadow rounded-lg">
+          <table className="min-w-full border-collapse">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Name</th>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">ID Number</th>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Contact</th>
+                <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.length > 0 ? (
+                students.map(student => (
+                  <tr key={student.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-2">{student.first_name} {student.last_name}</td>
+                    <td className="px-4 py-2">{student.id_number}</td>
+                    <td className="px-4 py-2">{student.contact_number}</td>
+                    <td className="px-4 py-2 text-center space-x-2">
+                      <button
+                        className="text-blue-600 hover:underline text-sm"
+                        onClick={() => { setEditingStudent(student); setIsEditOpen(true) }}
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="text-center py-6 text-gray-500">
+                    No students found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {(data?.count > 0) && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p className="text-gray-600 text-sm">
+              Showing {students.length} of {data?.count || 0} students
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={!hasPreviousPage || page <= 1}
+                className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-700">Page {page}</span>
+              <button
+                onClick={() => setPage(page + 1)}
+                disabled={!hasNextPage}
+                className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Create Student Modal */}
         {isCreateOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">Add New Student</h2>
-              <form onSubmit={handleCreateStudent} className="space-y-3">
+              <h2 className="text-xl font-semibold mb-4">Add Student</h2>
+              <form onSubmit={handleCreateSubmit} className="space-y-3">
                 <input
                   type="text"
                   placeholder="First Name"
@@ -200,7 +285,7 @@ export default function StudentsPage() {
                     type="submit"
                     className="px-4 py-2 bg-blue-600 text-white rounded"
                   >
-                    Create
+                    Add
                   </button>
                 </div>
               </form>
@@ -208,63 +293,60 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {/* Table */}
-        <div className="overflow-x-auto bg-white shadow rounded-lg">
-          <table className="min-w-full border-collapse">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Name</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">ID Number</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Contact</th>
-                <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.length > 0 ? (
-                students.map(student => (
-                  <tr key={student.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">{student.first_name} {student.last_name}</td>
-                    <td className="px-4 py-2">{student.id_number}</td>
-                    <td className="px-4 py-2">{student.contact_number}</td>
-                    <td className="px-4 py-2 text-center space-x-2">
-                      <button className="text-blue-600 hover:underline text-sm">Edit</button>
-                      <button className="text-red-600 hover:underline text-sm">Delete</button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="text-center py-6 text-gray-500">
-                    No students found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {(data?.count > 0) && (
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-            <p className="text-gray-600 text-sm">
-              Showing {students.length} of {data?.count || 0} students
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(page - 1)}
-                disabled={!hasPreviousPage || page <= 1}
-                className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-700">Page {page}</span>
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={!hasNextPage}
-                className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
-              >
-                Next
-              </button>
+        {/* Edit Student Modal */}
+        {isEditOpen && editingStudent && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">Edit Student</h2>
+              <form onSubmit={handleEditSubmit} className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={editingStudent.first_name}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, first_name: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={editingStudent.last_name}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, last_name: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="ID Number"
+                  value={editingStudent.id_number}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, id_number: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Contact Number"
+                  value={editingStudent.contact_number}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, contact_number: e.target.value })}
+                  className="border px-3 py-2 rounded w-full"
+                  required
+                />
+                <div className="flex justify-end gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditOpen(false); setEditingStudent(null) }}
+                    className="px-4 py-2 border rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-600 text-white rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
