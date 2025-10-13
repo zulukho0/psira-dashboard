@@ -12,7 +12,7 @@ export default function CoursesPage() {
   const [formData, setFormData] = useState({ grade: '', description: '', price: '' });
 
   // Fetch courses
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['courses', page, search],
     queryFn: () => fetchCourses({ page, search }),
     retry: 0,
@@ -20,8 +20,8 @@ export default function CoursesPage() {
   });
 
   const courses = data?.results || [];
-  const hasNextPage = data?.next;
-  const hasPreviousPage = data?.previous;
+  const hasNextPage = !!data?.next;
+  const hasPreviousPage = !!data?.previous;
 
   // Search handler
   const handleSearch = (e) => {
@@ -110,6 +110,9 @@ export default function CoursesPage() {
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Search</button>
         </form>
 
+        {/* Refresh Indicator */}
+        {isFetching && <div className="text-sm text-gray-500 italic mb-2">Refreshing data...</div>}
+
         {/* Table */}
         <div className="overflow-x-auto bg-white shadow rounded-lg">
           <table className="min-w-full border-collapse">
@@ -140,6 +143,32 @@ export default function CoursesPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {data?.count > 0 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
+            <p className="text-gray-600 text-sm">
+              Showing {courses.length} of {data?.count || 0} courses
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={!hasPreviousPage || page <= 1}
+                className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-700">Page {page}</span>
+              <button
+                onClick={() => setPage(page + 1)}
+                disabled={!hasNextPage}
+                className="border border-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-md disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Modal */}
         <CourseModal
