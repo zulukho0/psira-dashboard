@@ -25,6 +25,15 @@ export default function ClassesPage() {
     refetchOnWindowFocus: false
   });
 
+  // Debug logging
+  console.log('Classes Page Debug:', {
+    isLoading,
+    error: error?.message || error,
+    data,
+    classes: data?.results || [],
+    firstClass: data?.results?.[0] // Log the first class to see its structure
+  });
+
   const classes = data?.results || [];
   const hasNextPage = !!data?.next;
   const hasPreviousPage = !!data?.previous;
@@ -106,7 +115,20 @@ export default function ClassesPage() {
     return (
       <>
         <Navbar />
-        <div>Error loading classes</div>
+        <div className="p-6 max-w-6xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h2 className="text-red-800 font-semibold text-lg mb-2">Error loading classes</h2>
+            <p className="text-red-600 text-sm">
+              {error?.response?.data?.detail || error?.message || 'An unknown error occurred'}
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="mt-3 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </>
     );
 
@@ -168,8 +190,12 @@ export default function ClassesPage() {
                     <td className="px-4 py-2">{cls.batch_number}</td>
                     <td className="px-4 py-2">{cls.start_date}</td>
                     <td className="px-4 py-2">{cls.end_date}</td>
-                    <td className="px-4 py-2">{cls.course}</td>
-                    <td className="px-4 py-2">{cls.instructor}</td>
+                    <td className="px-4 py-2">
+                      {cls.course_name || cls.course_description || `Course ID: ${cls.course}`}
+                    </td>
+                    <td className="px-4 py-2">
+                      {cls.instructor_name || cls.instructor_full_name || `Instructor ID: ${cls.instructor}`}
+                    </td>
                     <td className="px-4 py-2 text-center space-x-2">
                       <button
                         className="text-blue-600 hover:underline text-sm"
