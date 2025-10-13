@@ -36,6 +36,10 @@ function LoginPage() {
       // Save tokens in auth context
       login({ access: data.access, refresh: data.refresh });
 
+      // Store user info in localStorage
+      localStorage.setItem("username", username);
+
+
       // Redirect to dashboard
       navigate("/dashboard", { replace: true });
     } catch (err) {
