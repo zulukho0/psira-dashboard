@@ -28,3 +28,11 @@ export const fetchInstructors = async () => {
   const response = await api.get('/instructors/');
   return response.data.results || [];
 };
+
+export const updateClassStudents = async (classId, studentIds) => {
+  const response = await api.post(`/classes/${classId}/update_students/`, {
+    students: studentIds,
+  });
+  return response.data;
+};
+

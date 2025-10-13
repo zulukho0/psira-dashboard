@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '../../../components/Navbar.jsx';
-import { fetchClasses, createClass, updateClass, deleteClass } from '../classes.api.js';
+import {
+  fetchClasses,
+  createClass,
+  updateClass,
+  deleteClass,
+  updateClassStudents
+} from '../classes.api.js';
 import { fetchCourses } from '../../courses/courses.api.js';
 import ClassModal from '../components/ClassModal.jsx';
+import ManageStudentsModal from '../components/ManageStudentsModal.jsx';
 
 export default function ClassesPage() {
   const [page, setPage] = useState(1);
@@ -18,6 +25,10 @@ export default function ClassesPage() {
     course: '',
     instructor: ''
   });
+
+  // Students modal state
+  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
 
   // Fetch courses for mapping course IDs to names
   const { data: coursesData } = useQuery({
@@ -85,7 +96,6 @@ export default function ClassesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted with data:', formData);
 
     try {
       const payload = {
@@ -96,34 +106,17 @@ export default function ClassesPage() {
         instructor_id: Number(formData.instructor)
       };
 
-      console.log('Sending payload:', payload);
-
       if (editingClass) {
-        const result = await updateClass(editingClass.id, payload);
-        console.log('Update result:', result);
+        await updateClass(editingClass.id, payload);
       } else {
-        const result = await createClass(payload);
-        console.log('Create result:', result);
+        await createClass(payload);
       }
 
       refetch();
       closeModal();
     } catch (err) {
       console.error('Error saving class:', err);
-      console.error('Error details:', err.response?.data);
-
-      let errorMsg = 'Failed to save class';
-      if (err.response?.data) {
-        const errors = err.response.data;
-        const errorDetails = Object.entries(errors)
-          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
-          .join('\n');
-        errorMsg += ':\n' + errorDetails;
-      } else {
-        errorMsg += ': ' + err.message;
-      }
-
-      alert(errorMsg);
+      alert('Failed to save class. Check console for details.');
     }
   };
 
@@ -138,6 +131,18 @@ export default function ClassesPage() {
       console.error('Error deleting class:', err);
       alert('Failed to delete class.');
     }
+  };
+
+  // Open Manage Students modal
+  const openStudentsModal = (cls) => {
+    setSelectedClass(cls);
+    setIsStudentsModalOpen(true);
+  };
+
+  // Refresh after updating students
+  const handleStudentsUpdate = () => {
+    refetch();
+    setSelectedClass(null);
   };
 
   if (isLoading)
@@ -206,59 +211,64 @@ export default function ClassesPage() {
         {/* Table */}
         <div className="overflow-x-auto bg-white shadow rounded-lg">
           <table className="min-w-full border-collapse">
-  <thead className="bg-gray-50 border-b">
-    <tr>
-      <th className="px-4 py-2 text-left">Grade</th>
-      <th className="px-4 py-2 text-left">Batch Number</th>
-      <th className="px-4 py-2 text-left">Course Number</th>
-      <th className="px-4 py-2 text-left">Instructor</th>
-      <th className="px-4 py-2 text-left">Start Date</th>
-      <th className="px-4 py-2 text-left">End Date</th>
-      <th className="px-4 py-2 text-center">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {classes.length > 0 ? (
-      classes.map((cls) => (
-        <tr key={cls.id} className="border-b hover:bg-gray-50">
-          <td className="px-4 py-2">
-            {coursesMap[cls.course]?.grade || `Course ID: ${cls.course}`}
-          </td>
-          <td className="px-4 py-2">{cls.course_number}</td>
-          <td className="px-4 py-2">{cls.batch_number}</td>
-          <td className="px-4 py-2">
-            {typeof cls.instructor === 'object' && cls.instructor !== null
-              ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
-              : `Instructor ID: ${cls.instructor}`}
-          </td>
-          <td className="px-4 py-2">{cls.start_date}</td>
-          <td className="px-4 py-2">{cls.end_date}</td>
-          <td className="px-4 py-2 text-center space-x-2">
-            <button
-              className="text-blue-600 hover:underline text-sm"
-              onClick={() => openModal(cls)}
-            >
-              Edit
-            </button>
-            <button
-              className="text-red-600 hover:underline text-sm"
-              onClick={() => handleDelete(cls.id, cls.batch_number)}
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      ))
-    ) : (
-      <tr>
-        <td colSpan="7" className="text-center py-6 text-gray-500">
-          No classes found
-        </td>
-      </tr>
-    )}
-  </tbody>
-</table>
-
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-2 text-left">Course</th>
+                <th className="px-4 py-2 text-left">Course Number</th>
+                <th className="px-4 py-2 text-left">Batch Number</th>
+                <th className="px-4 py-2 text-left">Start Date</th>
+                <th className="px-4 py-2 text-left">End Date</th>
+                <th className="px-4 py-2 text-left">Instructor</th>
+                <th className="px-4 py-2 text-left">Students</th>
+                <th className="px-4 py-2 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {classes.length > 0 ? (
+                classes.map((cls) => (
+                  <tr key={cls.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-2">{coursesMap[cls.course]?.grade || `Course ID: ${cls.course}`}</td>
+                    <td className="px-4 py-2">{cls.course_number}</td>
+                    <td className="px-4 py-2">{cls.batch_number}</td>
+                    <td className="px-4 py-2">{cls.start_date}</td>
+                    <td className="px-4 py-2">{cls.end_date}</td>
+                    <td className="px-4 py-2">
+                      {cls.instructor?.first_name ? `${cls.instructor.first_name} ${cls.instructor.last_name}` : 'N/A'}
+                    </td>
+                    <td className="px-4 py-2">
+                      {cls.students?.length || 0}{' '}
+                      <button
+                        className="text-green-600 hover:underline text-sm ml-2"
+                        onClick={() => openStudentsModal(cls)}
+                      >
+                        Manage
+                      </button>
+                    </td>
+                    <td className="px-4 py-2 text-center space-x-2">
+                      <button
+                        className="text-blue-600 hover:underline text-sm"
+                        onClick={() => openModal(cls)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="text-red-600 hover:underline text-sm"
+                        onClick={() => handleDelete(cls.id, cls.batch_number)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="text-center py-6 text-gray-500">
+                    No classes found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Pagination */}
@@ -287,7 +297,7 @@ export default function ClassesPage() {
           </div>
         )}
 
-        {/* Modal */}
+        {/* Class Modal */}
         <ClassModal
           isOpen={isModalOpen}
           onClose={closeModal}
@@ -296,6 +306,17 @@ export default function ClassesPage() {
           handleChange={handleChange}
           isEdit={!!editingClass}
         />
+
+        {/* Manage Students Modal */}
+        {selectedClass && (
+          <ManageStudentsModal
+            isOpen={isStudentsModalOpen}
+            onClose={() => setIsStudentsModalOpen(false)}
+            classId={selectedClass.id}
+            currentStudents={selectedClass.students || []}
+            onUpdate={handleStudentsUpdate}
+          />
+        )}
       </div>
     </>
   );
