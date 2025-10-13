@@ -55,9 +55,8 @@ export default function ClassModal({
               type="text"
               name="batch_number"
               value={formData.batch_number}
-              onChange={onChange}
-              className="border border-gray-300 w-full px-3 py-2 rounded-md"
-              required
+              className="border border-gray-300 w-full px-3 py-2 rounded-md bg-gray-100 text-gray-500"
+              disabled
             />
           </div>
 
