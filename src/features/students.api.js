@@ -1,4 +1,4 @@
-import api from './client';
+import api from '../api/client';
 
 export const getStudents = async ({ page = 1, search = '' } = {}) => {
   const params = {};

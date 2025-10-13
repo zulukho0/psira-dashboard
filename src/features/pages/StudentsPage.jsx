@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import api from '../api/client'
-import Navbar from '../components/Navbar'  // ✅ import the Navbar
+import api from '../../api/client'
+import Navbar from '../../components/Navbar'  // ✅ import the Navbar
 
 export default function StudentsPage() {
   const [page, setPage] = useState(1)
