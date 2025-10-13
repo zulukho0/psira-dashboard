@@ -39,8 +39,9 @@ export default function Navbar() {
         <nav className="flex gap-2">
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/students">Students</NavLink>
-        </nav>
-
+          <NavLink to="/courses">Courses</NavLink>
+          </nav>
+          
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
             👋 {storedUser ? storedUser : "Welcome"}
