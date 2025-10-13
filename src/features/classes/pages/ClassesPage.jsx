@@ -192,58 +192,59 @@ export default function ClassesPage() {
         {/* Table */}
         <div className="overflow-x-auto bg-white shadow rounded-lg">
           <table className="min-w-full border-collapse">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-2 text-left">Course Number</th>
-                <th className="px-4 py-2 text-left">Batch Number</th>
-                <th className="px-4 py-2 text-left">Start Date</th>
-                <th className="px-4 py-2 text-left">End Date</th>
-                <th className="px-4 py-2 text-left">Course</th>
-                <th className="px-4 py-2 text-left">Instructor</th>
-                <th className="px-4 py-2 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {classes.length > 0 ? (
-                classes.map((cls) => (
-                  <tr key={cls.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">{cls.course_number}</td>
-                    <td className="px-4 py-2">{cls.batch_number}</td>
-                    <td className="px-4 py-2">{cls.start_date}</td>
-                    <td className="px-4 py-2">{cls.end_date}</td>
-                    <td className="px-4 py-2">
-                      {cls.course_name || `Course ID: ${cls.course}`}
-                    </td>
-                    <td className="px-4 py-2">
-                      {typeof cls.instructor === 'object' && cls.instructor !== null
-                        ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
-                        : `Instructor ID: ${cls.instructor}`}
-                    </td>
-                    <td className="px-4 py-2 text-center space-x-2">
-                      <button
-                        className="text-blue-600 hover:underline text-sm"
-                        onClick={() => openModal(cls)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="text-red-600 hover:underline text-sm"
-                        onClick={() => handleDelete(cls.id, cls.batch_number)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="text-center py-6 text-gray-500">
-                    No classes found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+  <thead className="bg-gray-50 border-b">
+    <tr>
+      <th className="px-4 py-2 text-left">Course</th>
+      <th className="px-4 py-2 text-left">Course Number</th>
+      <th className="px-4 py-2 text-left">Batch Number</th>
+      <th className="px-4 py-2 text-left">Start Date</th>
+      <th className="px-4 py-2 text-left">End Date</th>
+      <th className="px-4 py-2 text-left">Instructor</th>
+      <th className="px-4 py-2 text-center">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {classes.length > 0 ? (
+      classes.map((cls) => (
+        <tr key={cls.id} className="border-b hover:bg-gray-50">
+          <td className="px-4 py-2">
+            {cls.course_name || `Course ID: ${cls.course}`}
+          </td>
+          <td className="px-4 py-2">{cls.course_number}</td>
+          <td className="px-4 py-2">{cls.batch_number}</td>
+          <td className="px-4 py-2">{cls.start_date}</td>
+          <td className="px-4 py-2">{cls.end_date}</td>
+          <td className="px-4 py-2">
+            {typeof cls.instructor === 'object' && cls.instructor !== null
+              ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
+              : `Instructor ID: ${cls.instructor}`}
+          </td>
+          <td className="px-4 py-2 text-center space-x-2">
+            <button
+              className="text-blue-600 hover:underline text-sm"
+              onClick={() => openModal(cls)}
+            >
+              Edit
+            </button>
+            <button
+              className="text-red-600 hover:underline text-sm"
+              onClick={() => handleDelete(cls.id, cls.batch_number)}
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan="7" className="text-center py-6 text-gray-500">
+          No classes found
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
+
         </div>
 
         {/* Pagination */}
