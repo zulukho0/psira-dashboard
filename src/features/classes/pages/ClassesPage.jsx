@@ -18,7 +18,6 @@ export default function ClassesPage() {
     instructor: ''
   });
 
-  // Fetch classes
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['classes', page, search],
     queryFn: () => fetchClasses({ page, search }),
@@ -45,7 +44,9 @@ export default function ClassesPage() {
         start_date: classItem.start_date,
         end_date: classItem.end_date,
         course: classItem.course,
-        instructor: classItem.instructor?.id || ''
+        instructor: typeof classItem.instructor === 'object' 
+          ? classItem.instructor.id 
+          : classItem.instructor
       });
     } else {
       setEditingClass(null);
@@ -70,24 +71,45 @@ export default function ClassesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted with data:', formData);
+
     try {
       const payload = {
-        ...formData,
+        course_number: formData.course_number,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
         course: Number(formData.course),
-        instructor: Number(formData.instructor)
+        instructor_id: Number(formData.instructor)
       };
 
+      console.log('Sending payload:', payload);
+
       if (editingClass) {
-        await updateClass(editingClass.id, payload);
+        const result = await updateClass(editingClass.id, payload);
+        console.log('Update result:', result);
       } else {
-        await createClass(payload);
+        const result = await createClass(payload);
+        console.log('Create result:', result);
       }
 
       refetch();
       closeModal();
     } catch (err) {
       console.error('Error saving class:', err);
-      alert('Failed to save class. Check console for details.');
+      console.error('Error details:', err.response?.data);
+
+      let errorMsg = 'Failed to save class';
+      if (err.response?.data) {
+        const errors = err.response.data;
+        const errorDetails = Object.entries(errors)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+          .join('\n');
+        errorMsg += ':\n' + errorDetails;
+      } else {
+        errorMsg += ': ' + err.message;
+      }
+
+      alert(errorMsg);
     }
   };
 
@@ -172,11 +194,11 @@ export default function ClassesPage() {
           <table className="min-w-full border-collapse">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-4 py-2 text-left">Course</th>
                 <th className="px-4 py-2 text-left">Course Number</th>
                 <th className="px-4 py-2 text-left">Batch Number</th>
                 <th className="px-4 py-2 text-left">Start Date</th>
                 <th className="px-4 py-2 text-left">End Date</th>
+                <th className="px-4 py-2 text-left">Course</th>
                 <th className="px-4 py-2 text-left">Instructor</th>
                 <th className="px-4 py-2 text-center">Actions</th>
               </tr>
@@ -185,13 +207,17 @@ export default function ClassesPage() {
               {classes.length > 0 ? (
                 classes.map((cls) => (
                   <tr key={cls.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">{cls.course_name || `Course ID: ${cls.course}`}</td>
                     <td className="px-4 py-2">{cls.course_number}</td>
                     <td className="px-4 py-2">{cls.batch_number}</td>
                     <td className="px-4 py-2">{cls.start_date}</td>
                     <td className="px-4 py-2">{cls.end_date}</td>
                     <td className="px-4 py-2">
-                      {cls.instructor?.first_name} {cls.instructor?.last_name}
+                      {cls.course_name || `Course ID: ${cls.course}`}
+                    </td>
+                    <td className="px-4 py-2">
+                      {typeof cls.instructor === 'object' && cls.instructor !== null
+                        ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
+                        : `Instructor ID: ${cls.instructor}`}
                     </td>
                     <td className="px-4 py-2 text-center space-x-2">
                       <button

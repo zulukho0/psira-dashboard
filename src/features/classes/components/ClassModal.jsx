@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchCourses } from '../../courses/courses.api.js';
+import { fetchInstructors } from '../../instructors/instructors.api.js';
 
 export default function ClassModal({ isOpen, onClose, onSubmit, formData, handleChange, isEdit }) {
   const [courses, setCourses] = useState([]);
@@ -8,37 +9,32 @@ export default function ClassModal({ isOpen, onClose, onSubmit, formData, handle
   const [loadingInstructors, setLoadingInstructors] = useState(true);
 
   useEffect(() => {
-    const loadCourses = async () => {
+    const loadData = async () => {
+      if (!isOpen) return;
+
       try {
-        const data = await fetchCourses({ page: 1, search: '' });
-        setCourses(data.results || []);
+        setLoadingCourses(true);
+        const coursesData = await fetchCourses({ page: 1, page_size: 1000 });
+        setCourses(coursesData.results || coursesData);
+
+        setLoadingInstructors(true);
+        const instructorsData = await fetchInstructors({ page: 1, page_size: 1000 });
+        setInstructors(instructorsData.results || instructorsData);
       } catch (err) {
-        console.error(err);
+        console.error('Error loading data:', err);
       } finally {
         setLoadingCourses(false);
-      }
-    };
-
-    const loadInstructors = async () => {
-      try {
-        const res = await fetch('http://127.0.0.1:8000/api/instructors/');
-        const data = await res.json();
-        setInstructors(data.results || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
         setLoadingInstructors(false);
       }
     };
 
-    loadCourses();
-    loadInstructors();
-  }, []);
+    loadData();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-start pt-20 z-50 overflow-auto">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
         <h2 className="text-xl font-semibold mb-4">{isEdit ? 'Edit Class' : 'Add Class'}</h2>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -75,18 +71,6 @@ export default function ClassModal({ isOpen, onClose, onSubmit, formData, handle
               onChange={handleChange}
               className="border border-gray-300 w-full px-3 py-2 rounded-md"
               required
-            />
-          </div>
-
-          {/* Batch Number */}
-          <div>
-            <label className="block text-sm font-medium">Batch Number</label>
-            <input
-              type="text"
-              name="batch_number"
-              value={formData.batch_number}
-              className="border border-gray-300 w-full px-3 py-2 rounded-md bg-gray-100 text-gray-500"
-              disabled
             />
           </div>
 
