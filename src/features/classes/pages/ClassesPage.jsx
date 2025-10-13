@@ -18,20 +18,12 @@ export default function ClassesPage() {
     instructor: ''
   });
 
+  // Fetch classes
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['classes', page, search],
     queryFn: () => fetchClasses({ page, search }),
     retry: 0,
     refetchOnWindowFocus: false
-  });
-
-  // Debug logging
-  console.log('Classes Page Debug:', {
-    isLoading,
-    error: error?.message || error,
-    data,
-    classes: data?.results || [],
-    firstClass: data?.results?.[0] // Log the first class to see its structure
   });
 
   const classes = data?.results || [];
@@ -53,7 +45,7 @@ export default function ClassesPage() {
         start_date: classItem.start_date,
         end_date: classItem.end_date,
         course: classItem.course,
-        instructor: classItem.instructor
+        instructor: classItem.instructor?.id || ''
       });
     } else {
       setEditingClass(null);
@@ -79,15 +71,23 @@ export default function ClassesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        course: Number(formData.course),
+        instructor: Number(formData.instructor)
+      };
+
       if (editingClass) {
-        await updateClass(editingClass.id, formData);
+        await updateClass(editingClass.id, payload);
       } else {
-        await createClass(formData);
+        await createClass(payload);
       }
+
       refetch();
       closeModal();
     } catch (err) {
       console.error('Error saving class:', err);
+      alert('Failed to save class. Check console for details.');
     }
   };
 
@@ -100,6 +100,7 @@ export default function ClassesPage() {
       refetch();
     } catch (err) {
       console.error('Error deleting class:', err);
+      alert('Failed to delete class.');
     }
   };
 
@@ -164,20 +165,18 @@ export default function ClassesPage() {
           </button>
         </form>
 
-        {isFetching && (
-          <div className="text-sm text-gray-500 italic mb-2">Refreshing data...</div>
-        )}
+        {isFetching && <div className="text-sm text-gray-500 italic mb-2">Refreshing data...</div>}
 
         {/* Table */}
         <div className="overflow-x-auto bg-white shadow rounded-lg">
           <table className="min-w-full border-collapse">
             <thead className="bg-gray-50 border-b">
               <tr>
+                <th className="px-4 py-2 text-left">Course</th>
                 <th className="px-4 py-2 text-left">Course Number</th>
                 <th className="px-4 py-2 text-left">Batch Number</th>
                 <th className="px-4 py-2 text-left">Start Date</th>
                 <th className="px-4 py-2 text-left">End Date</th>
-                <th className="px-4 py-2 text-left">Course</th>
                 <th className="px-4 py-2 text-left">Instructor</th>
                 <th className="px-4 py-2 text-center">Actions</th>
               </tr>
@@ -186,15 +185,13 @@ export default function ClassesPage() {
               {classes.length > 0 ? (
                 classes.map((cls) => (
                   <tr key={cls.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-2">{cls.course_name || `Course ID: ${cls.course}`}</td>
                     <td className="px-4 py-2">{cls.course_number}</td>
                     <td className="px-4 py-2">{cls.batch_number}</td>
                     <td className="px-4 py-2">{cls.start_date}</td>
                     <td className="px-4 py-2">{cls.end_date}</td>
                     <td className="px-4 py-2">
-                      {cls.course_name || cls.course_description || `Course ID: ${cls.course}`}
-                    </td>
-                    <td className="px-4 py-2">
-                      {cls.instructor_name || cls.instructor_full_name || `Instructor ID: ${cls.instructor}`}
+                      {cls.instructor?.first_name} {cls.instructor?.last_name}
                     </td>
                     <td className="px-4 py-2 text-center space-x-2">
                       <button
