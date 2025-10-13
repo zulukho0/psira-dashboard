@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
-import StudentsPage from './features/pages/StudentsPage.jsx';
+import StudentsPage from './features/students/pages/StudentsPage.jsx';
+import CoursesPage from './features/courses/pages/CoursesPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 
@@ -17,6 +18,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/students" element={<StudentsPage />} />
+            <Route path="/courses" element={<CoursesPage />} />
             {/* Future:
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/classes" element={<ClassesPage />} />
