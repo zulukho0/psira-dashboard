@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchCourses } from '../../courses/courses.api.js';
+import { fetchInstructors } from '../classes.api.js';
 
 export default function ClassModal({
   isOpen,
@@ -10,8 +11,11 @@ export default function ClassModal({
   isEdit
 }) {
   const [courses, setCourses] = useState([]);
+  const [instructors, setInstructors] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
-  const [error, setError] = useState(null);
+  const [loadingInstructors, setLoadingInstructors] = useState(true);
+  const [errorCourses, setErrorCourses] = useState(null);
+  const [errorInstructors, setErrorInstructors] = useState(null);
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -20,12 +24,24 @@ export default function ClassModal({
         setCourses(data.results || []);
       } catch (err) {
         console.error('Error fetching courses:', err);
-        setError('Failed to load courses');
+        setErrorCourses('Failed to load courses');
       } finally {
         setLoadingCourses(false);
       }
     };
+    const loadInstructors = async () => {
+      try {
+        const data = await fetchInstructors();
+        setInstructors(data || []);
+      } catch (err) {
+        console.error('Error fetching instructors:', err);
+        setErrorInstructors('Failed to load instructors');
+      } finally {
+        setLoadingInstructors(false);
+      }
+    };
     loadCourses();
+    loadInstructors();
   }, []);
 
   if (!isOpen) return null;
@@ -85,12 +101,13 @@ export default function ClassModal({
             </div>
           </div>
 
+          {/* Course Select */}
           <div>
             <label className="block text-sm font-medium">Course</label>
             {loadingCourses ? (
               <p className="text-gray-500 text-sm italic">Loading courses...</p>
-            ) : error ? (
-              <p className="text-red-500 text-sm">{error}</p>
+            ) : errorCourses ? (
+              <p className="text-red-500 text-sm">{errorCourses}</p>
             ) : (
               <select
                 name="course"
@@ -103,6 +120,31 @@ export default function ClassModal({
                 {courses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.grade} — {course.description}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Instructor Select */}
+          <div>
+            <label className="block text-sm font-medium">Instructor</label>
+            {loadingInstructors ? (
+              <p className="text-gray-500 text-sm italic">Loading instructors...</p>
+            ) : errorInstructors ? (
+              <p className="text-red-500 text-sm">{errorInstructors}</p>
+            ) : (
+              <select
+                name="instructor"
+                value={formData.instructor}
+                onChange={onChange}
+                className="border border-gray-300 w-full px-3 py-2 rounded-md"
+                required
+              >
+                <option value="">Select an instructor</option>
+                {instructors.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.first_name} {inst.last_name}
                   </option>
                 ))}
               </select>

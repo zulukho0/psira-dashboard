@@ -1,5 +1,6 @@
 import api from '../../api/client.js';
 
+// Classes
 export const fetchClasses = async ({ page, search }) => {
   const params = new URLSearchParams();
   if (page) params.append('page', page);
@@ -21,4 +22,9 @@ export const updateClass = async (id, data) => {
 export const deleteClass = async (id) => {
   const response = await api.delete(`/classes/${id}/`);
   return response.data;
+};
+
+export const fetchInstructors = async () => {
+  const response = await api.get('/instructors/');
+  return response.data.results || [];
 };

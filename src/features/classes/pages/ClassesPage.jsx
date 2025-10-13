@@ -14,7 +14,8 @@ export default function ClassesPage() {
     batch_number: '',
     start_date: '',
     end_date: '',
-    course: ''
+    course: '',
+    instructor: ''
   });
 
   // Fetch classes
@@ -45,7 +46,8 @@ export default function ClassesPage() {
         batch_number: classItem.batch_number,
         start_date: classItem.start_date,
         end_date: classItem.end_date,
-        course: classItem.course
+        course: classItem.course,
+        instructor: classItem.instructor
       });
     } else {
       setEditingClass(null);
@@ -54,7 +56,8 @@ export default function ClassesPage() {
         batch_number: '',
         start_date: '',
         end_date: '',
-        course: ''
+        course: '',
+        instructor: ''
       });
     }
     setIsModalOpen(true);
@@ -160,6 +163,7 @@ export default function ClassesPage() {
                 <th className="px-4 py-2 text-left">Start Date</th>
                 <th className="px-4 py-2 text-left">End Date</th>
                 <th className="px-4 py-2 text-left">Course</th>
+                <th className="px-4 py-2 text-left">Instructor</th>
                 <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
@@ -171,7 +175,8 @@ export default function ClassesPage() {
                     <td className="px-4 py-2">{cls.batch_number}</td>
                     <td className="px-4 py-2">{cls.start_date}</td>
                     <td className="px-4 py-2">{cls.end_date}</td>
-                    <td className="px-4 py-2">{cls.course}</td>
+                    <td className="px-4 py-2">{cls.course_name}</td>
+                    <td className="px-4 py-2">{cls.instructor_name}</td>
                     <td className="px-4 py-2 text-center space-x-2">
                       <button
                         className="text-blue-600 hover:underline text-sm"
@@ -191,7 +196,7 @@ export default function ClassesPage() {
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="7"
                     className="text-center py-6 text-gray-500"
                   >
                     No classes found
