@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import StudentsPage from './features/students/pages/StudentsPage.jsx';
 import CoursesPage from './features/courses/pages/CoursesPage.jsx';
+import InstructorsPage from './features/instructors/pages/InstructorsPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 
@@ -19,13 +20,9 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/courses" element={<CoursesPage />} />
-            {/* Future:
-            <Route path="/courses" element={<CoursesPage />} />
-            <Route path="/classes" element={<ClassesPage />} />
-            <Route path="/results" element={<ResultsPage />} />
             <Route path="/instructors" element={<InstructorsPage />} />
-            */}
           </Route>
+
 
           {/* Fallback */}
           <Route path="*" element={<div className="p-6">Not found</div>} />
