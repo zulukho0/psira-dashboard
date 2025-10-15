@@ -66,6 +66,10 @@ export default function ManageStudentsPage() {
     }
   };
 
+  const handleAddStudents = () => {
+    alert("Add Students modal or page will open here soon.");
+  };
+
   if (loading)
     return (
       <>
@@ -90,10 +94,18 @@ export default function ManageStudentsPage() {
     <>
       <Navbar />
       <div className="p-6 max-w-6xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold mb-4">
-          Manage Students for {classData.course_grade || "Class"} -{" "}
-          {classData.batch_number}
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">
+            Manage Students for {classData.course_grade || "Class"} -{" "}
+            {classData.batch_number}
+          </h1>
+          <button
+            onClick={handleAddStudents}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+          >
+            + Add Students
+          </button>
+        </div>
 
         <div className="bg-white p-4 rounded shadow">
           <table className="min-w-full border border-gray-200">
@@ -123,7 +135,9 @@ export default function ManageStudentsPage() {
                     <td className="border p-2">{student.last_name}</td>
                     <td className="border p-2">{student.id_number || "—"}</td>
                     <td className="border p-2">{student.mobile || "—"}</td>
-                    <td className="border p-2 text-center">{student.marks || "—"}</td>
+                    <td className="border p-2 text-center">
+                      {student.marks || "—"}
+                    </td>
                     <td className="border p-2 text-center">
                       {student.status || "Pending"}
                     </td>
