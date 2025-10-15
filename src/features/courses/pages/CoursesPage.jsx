@@ -1,15 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar.jsx';
 import { fetchCourses, createCourse, updateCourse, deleteCourse } from '../courses.api.js';
 import CourseModal from '../components/CourseModal.jsx';
-
 export default function CoursesPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
-  const [formData, setFormData] = useState({ grade: '', description: '', price: '' });
+  const [formData, setFormData] = useState({
+    grade: '',
+    description: '',
+    price: '',
+    subjects: []
+  });
 
   // Fetch courses
   const { data, isLoading, error, refetch, isFetching } = useQuery({
@@ -37,11 +43,12 @@ export default function CoursesPage() {
       setFormData({
         grade: course.grade,
         description: course.description,
-        price: course.price
+        price: course.price,
+        subjects: course.subjects || []
       });
     } else {
       setEditingCourse(null);
-      setFormData({ grade: '', description: '', price: '' });
+      setFormData({ grade: '', description: '', price: '', subjects: [] });
     }
     setIsModalOpen(true);
   };
@@ -52,13 +59,27 @@ export default function CoursesPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleSubjectChange = (subjects) => {
+    setFormData((prev) => ({ ...prev, subjects }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // For now, we'll just save the course data without subjects
+      // In a full implementation, we would need to handle subjects separately
+      const courseData = {
+        grade: formData.grade,
+        description: formData.description,
+        price: formData.price
+      };
+
       if (editingCourse) {
-        await updateCourse(editingCourse.id, formData);
+        await updateCourse(editingCourse.id, courseData);
+        setEditingCourse(null);
       } else {
-        await createCourse(formData);
+        await createCourse(courseData);
       }
       refetch();
       closeModal();
@@ -132,6 +153,7 @@ export default function CoursesPage() {
                   <td className="px-4 py-2">{course.price}</td>
                   <td className="px-4 py-2 text-center space-x-2">
                     <button className="text-blue-600 hover:underline text-sm" onClick={() => openModal(course)}>Edit</button>
+                    <button className="text-green-600 hover:underline text-sm" onClick={() => navigate(`/courses/${course.id}/subjects`)}>Manage Subjects</button>
                     <button className="text-red-600 hover:underline text-sm" onClick={() => handleDelete(course.id, course.grade)}>Delete</button>
                   </td>
                 </tr>
@@ -176,7 +198,13 @@ export default function CoursesPage() {
           onClose={closeModal}
           onSubmit={handleSubmit}
           formData={formData}
-          onChange={handleChange}
+          onChange={(e) => {
+            if (e.target.name === 'subjects') {
+              handleSubjectChange(e.target.value);
+            } else {
+              handleChange(e);
+            }
+          }}
           isEdit={!!editingCourse}
         />
       </div>
