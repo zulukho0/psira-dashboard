@@ -6,14 +6,16 @@ import { fetchStudents } from "../../students/students.api.js";
 import { fetchClasses, updateClassStudents } from "../classes.api.js";
 
 export default function ManageStudentsPage() {
-  const { id } = useParams(); // class ID from URL
+  const { id } = useParams(); // class ID
   const navigate = useNavigate();
   const [classData, setClassData] = useState(null);
-  const [students, setStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [modalSelection, setModalSelection] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -25,11 +27,9 @@ export default function ManageStudentsPage() {
         if (!cls) throw new Error("Class not found");
         setClassData(cls);
 
-        // Fetch all students
-        const studentsData = await fetchStudents({ page: 1, page_size: 1000 });
-        setStudents(studentsData.results || studentsData);
+        const studentsRes = await fetchStudents({ page: 1, page_size: 1000 });
+        setAllStudents(studentsRes.results || studentsRes);
 
-        // Pre-select only current students
         const currentIds = cls.students?.map((s) => s.id) || [];
         setSelectedIds(currentIds);
       } catch (err) {
@@ -53,10 +53,9 @@ export default function ManageStudentsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    setError("");
     try {
       await updateClassStudents(id, selectedIds);
-      alert("Students updated successfully");
+      alert("Students updated successfully!");
       navigate("/classes");
     } catch (err) {
       console.error("Failed to update students:", err);
@@ -66,8 +65,24 @@ export default function ManageStudentsPage() {
     }
   };
 
-  const handleAddStudents = () => {
-    alert("Add Students modal or page will open here soon.");
+  const openModal = () => {
+    setModalSelection([]);
+    setShowModal(true);
+  };
+
+  const closeModal = () => setShowModal(false);
+
+  const toggleModalStudent = (studentId) => {
+    setModalSelection((prev) =>
+      prev.includes(studentId)
+        ? prev.filter((sid) => sid !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const addSelectedFromModal = () => {
+    setSelectedIds((prev) => [...new Set([...prev, ...modalSelection])]);
+    closeModal();
   };
 
   if (loading)
@@ -88,7 +103,7 @@ export default function ManageStudentsPage() {
       </>
     );
 
-  const selectedStudents = students.filter((s) => selectedIds.includes(s.id));
+  const selectedStudents = allStudents.filter((s) => selectedIds.includes(s.id));
 
   return (
     <>
@@ -100,7 +115,7 @@ export default function ManageStudentsPage() {
             {classData.batch_number}
           </h1>
           <button
-            onClick={handleAddStudents}
+            onClick={openModal}
             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
           >
             + Add Students
@@ -111,26 +126,19 @@ export default function ManageStudentsPage() {
           <table className="min-w-full border border-gray-200">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-2 border text-left">Select</th>
                 <th className="p-2 border text-left">Name</th>
                 <th className="p-2 border text-left">Surname</th>
                 <th className="p-2 border text-left">ID Number</th>
                 <th className="p-2 border text-left">Mobile</th>
                 <th className="p-2 border text-center">Marks</th>
                 <th className="p-2 border text-center">Status</th>
+                <th className="p-2 border text-center">Remove</th>
               </tr>
             </thead>
             <tbody>
               {selectedStudents.length > 0 ? (
                 selectedStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50">
-                    <td className="border p-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(student.id)}
-                        onChange={() => toggleStudent(student.id)}
-                      />
-                    </td>
                     <td className="border p-2">{student.first_name}</td>
                     <td className="border p-2">{student.last_name}</td>
                     <td className="border p-2">{student.id_number || "—"}</td>
@@ -140,6 +148,18 @@ export default function ManageStudentsPage() {
                     </td>
                     <td className="border p-2 text-center">
                       {student.status || "Pending"}
+                    </td>
+                    <td className="border p-2 text-center">
+                      <button
+                        className="text-red-600 hover:text-red-800"
+                        onClick={() =>
+                          setSelectedIds((prev) =>
+                            prev.filter((sid) => sid !== student.id)
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -171,6 +191,67 @@ export default function ManageStudentsPage() {
           </button>
         </div>
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-6 relative">
+            <h2 className="text-xl font-semibold mb-4">Select Students</h2>
+
+            <table className="min-w-full border border-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 border text-left">Select</th>
+                  <th className="p-2 border text-left">Name</th>
+                  <th className="p-2 border text-left">Surname</th>
+                  <th className="p-2 border text-left">ID Number</th>
+                  <th className="p-2 border text-left">Mobile</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allStudents.length > 0 ? (
+                  allStudents.map((student) => (
+                    <tr key={student.id} className="hover:bg-gray-50">
+                      <td className="border p-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={modalSelection.includes(student.id)}
+                          onChange={() => toggleModalStudent(student.id)}
+                        />
+                      </td>
+                      <td className="border p-2">{student.first_name}</td>
+                      <td className="border p-2">{student.last_name}</td>
+                      <td className="border p-2">{student.id_number || "—"}</td>
+                      <td className="border p-2">{student.mobile || "—"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center p-4 text-gray-500">
+                      No students available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-100"
+                onClick={closeModal}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                onClick={addSelectedFromModal}
+              >
+                Add Selected
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
