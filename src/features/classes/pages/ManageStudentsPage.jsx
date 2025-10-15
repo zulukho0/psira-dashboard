@@ -5,6 +5,7 @@ import Navbar from "../../../components/Navbar.jsx";
 import { fetchStudents } from "../../students/students.api.js";
 import { fetchClasses, updateClassStudents } from "../classes.api.js";
 
+
 export default function ManageStudentsPage() {
   const { id } = useParams(); // class ID from URL
   const navigate = useNavigate();

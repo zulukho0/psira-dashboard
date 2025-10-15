@@ -26,24 +26,40 @@ export const deleteClass = async (id) => {
 };
 
 // Update students in a class
+// classes.api.js
 export const updateClassStudents = async (classId, studentIds) => {
   const token = localStorage.getItem('access_token');
-  const res = await fetch(
-    `http://localhost:8000/api/classes/${classId}/update_students/`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ students: studentIds }),
-    }
-  );
+  if (!token) throw new Error('Not authenticated');
 
+  const res = await fetch(`http://localhost:8000/api/classes/${classId}/update_students/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ students: studentIds }),
+  });
+
+  // Check for errors
   if (!res.ok) {
-    const errData = await res.json();
-    throw new Error(errData.detail || 'Failed to update students');
+    // Try to parse JSON error if possible
+    try {
+      const errorData = await res.json();
+      throw new Error(
+        errorData.detail || 
+        Object.entries(errorData)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+          .join(', ') ||
+        'Failed to update students'
+      );
+    } catch {
+      // fallback if not JSON (HTML, etc.)
+      const text = await res.text();
+      throw new Error(text || 'Failed to update students');
+    }
   }
 
+  // Return updated class data
   return res.json();
 };
+
