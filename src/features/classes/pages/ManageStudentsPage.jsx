@@ -20,7 +20,6 @@ export default function ManageStudentsPage() {
       setLoading(true);
       setError("");
       try {
-        // Fetch all classes and find this one
         const classRes = await fetchClasses({ page: 1, search: "" });
         const cls = classRes.results.find((c) => c.id === Number(id));
         if (!cls) throw new Error("Class not found");
@@ -30,7 +29,7 @@ export default function ManageStudentsPage() {
         const studentsData = await fetchStudents({ page: 1, page_size: 1000 });
         setStudents(studentsData.results || studentsData);
 
-        // Pre-select current students
+        // Pre-select only current students
         const currentIds = cls.students?.map((s) => s.id) || [];
         setSelectedIds(currentIds);
       } catch (err) {
@@ -58,7 +57,7 @@ export default function ManageStudentsPage() {
     try {
       await updateClassStudents(id, selectedIds);
       alert("Students updated successfully");
-      navigate("/classes"); // Go back to classes page
+      navigate("/classes");
     } catch (err) {
       console.error("Failed to update students:", err);
       setError("Failed to update students");
@@ -85,6 +84,8 @@ export default function ManageStudentsPage() {
       </>
     );
 
+  const selectedStudents = students.filter((s) => selectedIds.includes(s.id));
+
   return (
     <>
       <Navbar />
@@ -98,35 +99,43 @@ export default function ManageStudentsPage() {
           <table className="min-w-full border border-gray-200">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-2 border">Select</th>
-                <th className="p-2 border">Name</th>
-                <th className="p-2 border">Surname</th>
-                <th className="p-2 border">ID Number</th>
-                <th className="p-2 border">Mobile</th>
-                <th className="p-2 border">Marks</th>
-                <th className="p-2 border">Status</th>
+                <th className="p-2 border text-left">Select</th>
+                <th className="p-2 border text-left">Name</th>
+                <th className="p-2 border text-left">Surname</th>
+                <th className="p-2 border text-left">ID Number</th>
+                <th className="p-2 border text-left">Mobile</th>
+                <th className="p-2 border text-center">Marks</th>
+                <th className="p-2 border text-center">Status</th>
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50">
-                  <td className="border p-2 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(student.id)}
-                      onChange={() => toggleStudent(student.id)}
-                    />
-                  </td>
-                  <td className="border p-2">{student.first_name}</td>
-                  <td className="border p-2">{student.last_name}</td>
-                  <td className="border p-2">{student.id_number || "—"}</td>
-                  <td className="border p-2">{student.mobile || "—"}</td>
-                  <td className="border p-2 text-center">{student.marks || "—"}</td>
-                  <td className="border p-2 text-center">
-                    {student.status || "Pending"}
+              {selectedStudents.length > 0 ? (
+                selectedStudents.map((student) => (
+                  <tr key={student.id} className="hover:bg-gray-50">
+                    <td className="border p-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(student.id)}
+                        onChange={() => toggleStudent(student.id)}
+                      />
+                    </td>
+                    <td className="border p-2">{student.first_name}</td>
+                    <td className="border p-2">{student.last_name}</td>
+                    <td className="border p-2">{student.id_number || "—"}</td>
+                    <td className="border p-2">{student.mobile || "—"}</td>
+                    <td className="border p-2 text-center">{student.marks || "—"}</td>
+                    <td className="border p-2 text-center">
+                      {student.status || "Pending"}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center p-4 text-gray-500">
+                    No students added to this class yet.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
