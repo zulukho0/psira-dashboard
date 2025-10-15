@@ -5,7 +5,6 @@ import Navbar from "../../../components/Navbar.jsx";
 import { fetchStudents } from "../../students/students.api.js";
 import { fetchClasses, updateClassStudents } from "../classes.api.js";
 
-
 export default function ManageStudentsPage() {
   const { id } = useParams(); // class ID from URL
   const navigate = useNavigate();
@@ -21,7 +20,7 @@ export default function ManageStudentsPage() {
       setLoading(true);
       setError("");
       try {
-        // Fetch class details
+        // Fetch all classes and find this one
         const classRes = await fetchClasses({ page: 1, search: "" });
         const cls = classRes.results.find((c) => c.id === Number(id));
         if (!cls) throw new Error("Class not found");
@@ -59,7 +58,7 @@ export default function ManageStudentsPage() {
     try {
       await updateClassStudents(id, selectedIds);
       alert("Students updated successfully");
-      navigate("/classes"); // go back to classes page
+      navigate("/classes"); // Go back to classes page
     } catch (err) {
       console.error("Failed to update students:", err);
       setError("Failed to update students");
@@ -89,25 +88,47 @@ export default function ManageStudentsPage() {
   return (
     <>
       <Navbar />
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold mb-4">
-          Manage Students for {classData.course_grade || "Class"} - {classData.batch_number}
+          Manage Students for {classData.course_grade || "Class"} -{" "}
+          {classData.batch_number}
         </h1>
 
-        <div className="bg-white p-4 rounded shadow max-h-[500px] overflow-y-auto">
-          {students.map((student) => (
-            <div key={student.id} className="flex items-center gap-2 py-1">
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(student.id)}
-                onChange={() => toggleStudent(student.id)}
-                id={`student-${student.id}`}
-              />
-              <label htmlFor={`student-${student.id}`}>
-                {student.first_name} {student.last_name} ({student.psira_number})
-              </label>
-            </div>
-          ))}
+        <div className="bg-white p-4 rounded shadow">
+          <table className="min-w-full border border-gray-200">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 border">Select</th>
+                <th className="p-2 border">Name</th>
+                <th className="p-2 border">Surname</th>
+                <th className="p-2 border">ID Number</th>
+                <th className="p-2 border">Mobile</th>
+                <th className="p-2 border">Marks</th>
+                <th className="p-2 border">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((student) => (
+                <tr key={student.id} className="hover:bg-gray-50">
+                  <td className="border p-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(student.id)}
+                      onChange={() => toggleStudent(student.id)}
+                    />
+                  </td>
+                  <td className="border p-2">{student.first_name}</td>
+                  <td className="border p-2">{student.last_name}</td>
+                  <td className="border p-2">{student.id_number || "—"}</td>
+                  <td className="border p-2">{student.mobile || "—"}</td>
+                  <td className="border p-2 text-center">{student.marks || "—"}</td>
+                  <td className="border p-2 text-center">
+                    {student.status || "Pending"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
