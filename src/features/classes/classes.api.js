@@ -25,41 +25,19 @@ export const deleteClass = async (id) => {
   return response.data;
 };
 
-// Update students in a class
-// classes.api.js
+ // Update students in a class
 export const updateClassStudents = async (classId, studentIds) => {
-  const token = localStorage.getItem('access_token');
-  if (!token) throw new Error('Not authenticated');
-
-  const res = await fetch(`http://localhost:8000/api/classes/${classId}/update_students/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ students: studentIds }),
+  const response = await api.post(`/classes/${classId}/update_students/`, {
+    students: studentIds
   });
+  return response.data;
+};
 
-  // Check for errors
-  if (!res.ok) {
-    // Try to parse JSON error if possible
-    try {
-      const errorData = await res.json();
-      throw new Error(
-        errorData.detail || 
-        Object.entries(errorData)
-          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
-          .join(', ') ||
-        'Failed to update students'
-      );
-    } catch {
-      // fallback if not JSON (HTML, etc.)
-      const text = await res.text();
-      throw new Error(text || 'Failed to update students');
-    }
-  }
-
-  // Return updated class data
-  return res.json();
+// Remove a student from a class
+export const removeStudentFromClass = async (classId, studentId) => {
+  const response = await api.post(`/classes/${classId}/remove_student/`, {
+    student_id: studentId
+  });
+  return response.data;
 };
 
