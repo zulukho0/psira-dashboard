@@ -1,12 +1,11 @@
-// features/classes/pages/ManageStudentsPage.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar.jsx";
 import { fetchStudents } from "../../students/students.api.js";
-import { fetchClasses, updateClassStudents } from "../classes.api.js";
+import { fetchClasses, updateClassStudents, removeStudentFromClass } from "../classes.api.js";
 
 export default function ManageStudentsPage() {
-  const { id } = useParams(); // class ID
+  const { id } = useParams();
   const navigate = useNavigate();
   const [classData, setClassData] = useState(null);
   const [allStudents, setAllStudents] = useState([]);
@@ -14,8 +13,11 @@ export default function ManageStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Modal states
   const [showModal, setShowModal] = useState(false);
   const [modalSelection, setModalSelection] = useState([]);
+  const [modalSearch, setModalSearch] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -43,30 +45,34 @@ export default function ManageStudentsPage() {
     loadData();
   }, [id]);
 
-  const toggleStudent = (studentId) => {
-    setSelectedIds((prev) =>
-      prev.includes(studentId)
-        ? prev.filter((sid) => sid !== studentId)
-        : [...prev, studentId]
-    );
-  };
-
   const handleSave = async () => {
     setSaving(true);
+    setError(""); // Clear previous errors
     try {
       await updateClassStudents(id, selectedIds);
       alert("Students updated successfully!");
       navigate("/classes");
     } catch (err) {
       console.error("Failed to update students:", err);
-      setError("Failed to update students");
+      // Show more detailed error message
+      const errorMessage =
+        err?.response?.data?.detail ||
+        Object.entries(err?.response?.data || {})
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+          .join(", ") ||
+        err?.message ||
+        "Failed to update students";
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }
   };
 
+
+
   const openModal = () => {
     setModalSelection([]);
+    setModalSearch("");
     setShowModal(true);
   };
 
@@ -104,6 +110,14 @@ export default function ManageStudentsPage() {
     );
 
   const selectedStudents = allStudents.filter((s) => selectedIds.includes(s.id));
+
+  // Filter students in modal based on search
+  const filteredModalStudents = allStudents.filter(
+    (s) =>
+      s.first_name.toLowerCase().includes(modalSearch.toLowerCase()) ||
+      s.last_name.toLowerCase().includes(modalSearch.toLowerCase()) ||
+      (s.id_number && s.id_number.includes(modalSearch))
+  );
 
   return (
     <>
@@ -143,20 +157,28 @@ export default function ManageStudentsPage() {
                     <td className="border p-2">{student.last_name}</td>
                     <td className="border p-2">{student.id_number || "—"}</td>
                     <td className="border p-2">{student.mobile || "—"}</td>
-                    <td className="border p-2 text-center">
-                      {student.marks || "—"}
-                    </td>
-                    <td className="border p-2 text-center">
-                      {student.status || "Pending"}
-                    </td>
+                    <td className="border p-2 text-center">{student.marks || "—"}</td>
+                    <td className="border p-2 text-center">{student.status || "Pending"}</td>
                     <td className="border p-2 text-center">
                       <button
                         className="text-red-600 hover:text-red-800"
-                        onClick={() =>
-                          setSelectedIds((prev) =>
-                            prev.filter((sid) => sid !== student.id)
-                          )
-                        }
+                        onClick={async () => {
+                          try {
+                            // Remove from backend
+                            await removeStudentFromClass(id, student.id);
+                            // Update local state
+                            setSelectedIds((prev) =>
+                              prev.filter((sid) => sid !== student.id)
+                            );
+                          } catch (err) {
+                            console.error("Failed to remove student:", err);
+                            const errorMessage =
+                              err?.response?.data?.detail ||
+                              err?.message ||
+                              "Failed to remove student";
+                            alert(errorMessage);
+                          }
+                        }}
                       >
                         Remove
                       </button>
@@ -194,46 +216,56 @@ export default function ManageStudentsPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-6 relative">
             <h2 className="text-xl font-semibold mb-4">Select Students</h2>
 
-            <table className="min-w-full border border-gray-200">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-2 border text-left">Select</th>
-                  <th className="p-2 border text-left">Name</th>
-                  <th className="p-2 border text-left">Surname</th>
-                  <th className="p-2 border text-left">ID Number</th>
-                  <th className="p-2 border text-left">Mobile</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allStudents.length > 0 ? (
-                  allStudents.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
-                      <td className="border p-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={modalSelection.includes(student.id)}
-                          onChange={() => toggleModalStudent(student.id)}
-                        />
-                      </td>
-                      <td className="border p-2">{student.first_name}</td>
-                      <td className="border p-2">{student.last_name}</td>
-                      <td className="border p-2">{student.id_number || "—"}</td>
-                      <td className="border p-2">{student.mobile || "—"}</td>
-                    </tr>
-                  ))
-                ) : (
+            <input
+              type="text"
+              placeholder="Search students by name, surname, or ID..."
+              className="border border-gray-300 w-full px-3 py-2 rounded mb-4"
+              value={modalSearch}
+              onChange={(e) => setModalSearch(e.target.value)}
+            />
+
+            <div className="overflow-y-auto max-h-96">
+              <table className="min-w-full border border-gray-200">
+                <thead className="bg-gray-100">
                   <tr>
-                    <td colSpan="5" className="text-center p-4 text-gray-500">
-                      No students available.
-                    </td>
+                    <th className="p-2 border text-left">Select</th>
+                    <th className="p-2 border text-left">Name</th>
+                    <th className="p-2 border text-left">Surname</th>
+                    <th className="p-2 border text-left">ID Number</th>
+                    <th className="p-2 border text-left">Mobile</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredModalStudents.length > 0 ? (
+                    filteredModalStudents.map((student) => (
+                      <tr key={student.id} className="hover:bg-gray-50">
+                        <td className="border p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={modalSelection.includes(student.id)}
+                            onChange={() => toggleModalStudent(student.id)}
+                          />
+                        </td>
+                        <td className="border p-2">{student.first_name}</td>
+                        <td className="border p-2">{student.last_name}</td>
+                        <td className="border p-2">{student.id_number || "—"}</td>
+                        <td className="border p-2">{student.mobile || "—"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="text-center p-4 text-gray-500">
+                        No students found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             <div className="flex justify-end gap-2 mt-4">
               <button
