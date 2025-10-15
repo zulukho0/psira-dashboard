@@ -1,11 +1,13 @@
+import SubjectManagement from './SubjectManagement.jsx';
+
 export default function CourseModal({ isOpen, onClose, onSubmit, formData, onChange, isEdit }) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">{isEdit ? 'Edit Course' : 'Add Course'}</h2>
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="space-y-4">
           <input
             name="grade"
             placeholder="Grade"
@@ -31,6 +33,12 @@ export default function CourseModal({ isOpen, onClose, onSubmit, formData, onCha
             className="border border-gray-300 rounded-md px-3 py-2 w-full"
             required
           />
+          
+          <SubjectManagement 
+            subjects={formData.subjects || []}
+            onSubjectsChange={(subjects) => onChange({ target: { name: 'subjects', value: subjects } })}
+          />
+          
           <div className="flex justify-end gap-2">
             <button
               type="button"
