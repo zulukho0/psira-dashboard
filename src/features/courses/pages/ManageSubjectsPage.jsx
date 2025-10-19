@@ -22,7 +22,7 @@ export default function ManageSubjectsPage() {
   // Fetch subjects for this course
   const { data: subjectsData, isLoading: subjectsLoading, error: subjectsError, refetch } = useQuery({
     queryKey: ['subjects', courseId],
-    queryFn: () => fetchSubjects({ search: `course:${courseId}` }),
+    queryFn: () => fetchSubjects({ search: `course_id:${courseId}` }),
     enabled: !!courseId
   });
 

@@ -23,9 +23,3 @@ export const fetchSubjects = async ({ page = 1, search = '' } = {}) => {
 export const createSubject = async (payload) => (await api.post('/subjects/', payload)).data;
 export const updateSubject = async (id, payload) => (await api.patch(`/subjects/${id}/`, payload)).data;
 export const deleteSubject = async (id) => (await api.delete(`/subjects/${id}/`)).data;
-
-// Get subjects for a specific course
-export const fetchSubjectsByCourse = async (courseId) => {
-  const res = await api.get(`/subjects/?course=${courseId}`);
-  return res.data;
-};

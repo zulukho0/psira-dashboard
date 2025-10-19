@@ -5,18 +5,18 @@ export default function SubjectManagement({ subjects, onSubjectsChange }) {
 
   const handleAddSubject = () => {
     if (newSubject.name.trim()) {
-      onSubjectsChange([...subjects, { ...newSubject, id: Date.now() }]);
+      onSubjectsChange([...subjects, { ...newSubject }]);
       setNewSubject({ name: '', max_theory: 100, max_practical: 100 });
     }
   };
 
-  const handleRemoveSubject = (id) => {
-    onSubjectsChange(subjects.filter(subject => subject.id !== id));
+  const handleRemoveSubject = (index) => {
+    onSubjectsChange(subjects.filter((_, i) => i !== index));
   };
 
-  const handleSubjectChange = (id, field, value) => {
-    onSubjectsChange(subjects.map(subject => 
-      subject.id === id ? { ...subject, [field]: value } : subject
+  const handleSubjectChange = (index, field, value) => {
+    onSubjectsChange(subjects.map((subject, i) => 
+      i === index ? { ...subject, [field]: value } : subject
     ));
   };
 
@@ -61,32 +61,32 @@ export default function SubjectManagement({ subjects, onSubjectsChange }) {
 
       {/* Subjects list */}
       <div className="space-y-2">
-        {subjects.map((subject) => (
-          <div key={subject.id} className="flex items-center gap-2 p-2 border border-gray-200 rounded-md">
+        {subjects.map((subject, index) => (
+          <div key={index} className="flex items-center gap-2 p-2 border border-gray-200 rounded-md">
             <input
               type="text"
               placeholder="Subject Name"
               value={subject.name}
-              onChange={(e) => handleSubjectChange(subject.id, 'name', e.target.value)}
+              onChange={(e) => handleSubjectChange(index, 'name', e.target.value)}
               className="flex-1 border border-gray-300 rounded-md px-2 py-1"
             />
             <input
               type="number"
               placeholder="Max Theory"
               value={subject.max_theory}
-              onChange={(e) => handleSubjectChange(subject.id, 'max_theory', parseInt(e.target.value) || 0)}
+              onChange={(e) => handleSubjectChange(index, 'max_theory', parseInt(e.target.value) || 0)}
               className="w-24 border border-gray-300 rounded-md px-2 py-1"
             />
             <input
               type="number"
               placeholder="Max Practical"
               value={subject.max_practical}
-              onChange={(e) => handleSubjectChange(subject.id, 'max_practical', parseInt(e.target.value) || 0)}
+              onChange={(e) => handleSubjectChange(index, 'max_practical', parseInt(e.target.value) || 0)}
               className="w-24 border border-gray-300 rounded-md px-2 py-1"
             />
             <button
               type="button"
-              onClick={() => handleRemoveSubject(subject.id)}
+              onClick={() => handleRemoveSubject(index)}
               className="text-red-600 hover:text-red-800"
             >
               Remove

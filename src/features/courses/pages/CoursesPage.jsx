@@ -4,12 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar.jsx';
 import { fetchCourses, createCourse, updateCourse, deleteCourse } from '../courses.api.js';
 import CourseModal from '../components/CourseModal.jsx';
+
 export default function CoursesPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState(null);
+  const [ingCourse, setEditingCourse] = useState(null);
   const [formData, setFormData] = useState({
     grade: '',
     description: '',
@@ -66,25 +67,76 @@ export default function CoursesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted');
+    console.log('Form data:', formData);
+    
+    // Validate form data
+    if (!formData.grade || !formData.grade.trim()) {
+      alert('Grade is required');
+      return;
+    }
+    
+    if (!formData.description || !formData.description.trim()) {
+      alert('Description is required');
+      return;
+    }
+    
+    if (formData.price === '' || isNaN(formData.price)) {
+      alert('Valid price is required');
+      return;
+    }
+    
     try {
-      // For now, we'll just save the course data without subjects
-      // In a full implementation, we would need to handle subjects separately
+      // Include subjects in the course data
       const courseData = {
-        grade: formData.grade,
-        description: formData.description,
-        price: formData.price
+        grade: formData.grade.trim(),
+        description: formData.description.trim(),
+        price: parseFloat(formData.price),
+        subjects: formData.subjects.map(subject => {
+          // Remove any temporary IDs when sending to backend
+          const { id, ...subjectData } = subject;
+          return {
+            name: subjectData.name.trim(),
+            max_theory: parseInt(subjectData.max_theory) || 0,
+            max_practical: parseInt(subjectData.max_practical) || 0
+          };
+        })
       };
 
-      if (editingCourse) {
-        await updateCourse(editingCourse.id, courseData);
+      console.log('Sending course data:', courseData);
+
+      if (ingCourse) {
+        console.log('Updating course:', ingCourse.id);
+        await updateCourse(ingCourse.id, courseData);
+        console.log('Course updated successfully');
         setEditingCourse(null);
       } else {
-        await createCourse(courseData);
+        console.log('Creating new course');
+        const result = await createCourse(courseData);
+        console.log('Course created successfully:', result);
       }
       refetch();
       closeModal();
     } catch (err) {
       console.error('Error saving course:', err);
+      console.error('Error response:', err.response);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      
+      // Try to get more detailed error information
+      let errorMessage = 'Unknown error occurred';
+      if (err.response) {
+        errorMessage = `Server error: ${err.response.status} - ${err.response.statusText}`;
+        if (err.response.data) {
+          errorMessage += `\nDetails: ${JSON.stringify(err.response.data)}`;
+        }
+      } else if (err.request) {
+        errorMessage = 'No response received from server';
+      } else {
+        errorMessage = err.message || errorMessage;
+      }
+      
+      alert(`Error saving course: ${errorMessage}`);
     }
   };
 
@@ -205,7 +257,7 @@ export default function CoursesPage() {
               handleChange(e);
             }
           }}
-          isEdit={!!editingCourse}
+          isEdit={!!ingCourse}
         />
       </div>
     </>
