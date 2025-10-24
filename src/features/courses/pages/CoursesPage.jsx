@@ -15,7 +15,6 @@ export default function CoursesPage() {
     grade: '',
     description: '',
     price: '',
-    subjects: []
   });
 
   // Fetch courses
@@ -45,11 +44,10 @@ export default function CoursesPage() {
         grade: course.grade,
         description: course.description,
         price: course.price,
-        subjects: course.subjects || []
       });
     } else {
       setEditingCourse(null);
-      setFormData({ grade: '', description: '', price: '', subjects: [] });
+      setFormData({ grade: '', description: '', price: ''});
     }
     setIsModalOpen(true);
   };
@@ -59,10 +57,6 @@ export default function CoursesPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubjectChange = (subjects) => {
-    setFormData((prev) => ({ ...prev, subjects }));
   };
 
   const handleSubmit = async (e) => {
@@ -87,20 +81,10 @@ export default function CoursesPage() {
     }
     
     try {
-      // Include subjects in the course data
       const courseData = {
         grade: formData.grade.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
-        subjects: formData.subjects.map(subject => {
-          // Remove any temporary IDs when sending to backend
-          const { id, ...subjectData } = subject;
-          return {
-            name: subjectData.name.trim(),
-            max_theory: parseInt(subjectData.max_theory) || 0,
-            max_practical: parseInt(subjectData.max_practical) || 0
-          };
-        })
       };
 
       console.log('Sending course data:', courseData);
@@ -250,13 +234,7 @@ export default function CoursesPage() {
           onClose={closeModal}
           onSubmit={handleSubmit}
           formData={formData}
-          onChange={(e) => {
-            if (e.target.name === 'subjects') {
-              handleSubjectChange(e.target.value);
-            } else {
-              handleChange(e);
-            }
-          }}
+          onChange={handleChange}
           isEdit={!!ingCourse}
         />
       </div>
