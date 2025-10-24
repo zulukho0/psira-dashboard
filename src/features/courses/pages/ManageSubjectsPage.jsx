@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
 import Navbar from '../../../components/Navbar.jsx';
 import { fetchCourses } from '../../courses/courses.api.js';
+import { getCourse } from '../../courses/courses.api.js';
 import { fetchSubjects, createSubject, updateSubject, deleteSubject } from '../subjects.api.js';
 
 export default function ManageSubjectsPage() {
@@ -12,10 +14,16 @@ export default function ManageSubjectsPage() {
   const [formData, setFormData] = useState({ name: '', max_theory: 100, max_practical: 100 });
   const [editingSubject, setEditingSubject] = useState(null);
 
+  useEffect(() => {
+  // Reset form + editing when course changes
+  setFormData({ name: '', max_theory: 100, max_practical: 100 });
+  setEditingSubject(null);
+}, [courseId]);
+
   // Fetch course details
   const { data: course, isLoading: courseLoading, error: courseError } = useQuery({
     queryKey: ['course', courseId],
-    queryFn: () => fetchCourses({ search: `id:${courseId}` }),
+    queryFn: () => getCourse(courseId),
     enabled: !!courseId
   });
 

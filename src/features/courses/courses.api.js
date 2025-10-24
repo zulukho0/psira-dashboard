@@ -9,6 +9,8 @@ export const fetchCourses = async ({ page = 1, search = '' } = {}) => {
   return res.data;
 };
 
+export const getCourse = async (id) => (await api.get(`/courses/${id}/`)).data;
+
 // CRUD operations
 export const createCourse = async (payload) => (await api.post('/courses/', payload)).data;
 export const updateCourse = async (id, payload) => (await api.patch(`/courses/${id}/`, payload)).data;
