@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo } from 'react';
+import { useEffect} from 'react';
 import Navbar from '../../../components/Navbar.jsx';
-import { fetchCourses } from '../../courses/courses.api.js';
+// import { fetchCourses } from '../../courses/courses.api.js';
 import { getCourse } from '../../courses/courses.api.js';
 import { fetchSubjects, createSubject, updateSubject, deleteSubject } from '../subjects.api.js';
 
@@ -111,7 +111,8 @@ export default function ManageSubjectsPage() {
     );
   }
 
-  const courseData = course?.results?.[0] || {};
+  // const courseData = course?.results?.[0] || {}
+  const courseData = course || {};;
 
   return (
     <>
@@ -119,7 +120,7 @@ export default function ManageSubjectsPage() {
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">
-            Manage Subjects for {courseData.grade || 'Course'}
+            Manage Subjects for {courseData.title || courseData.grade || 'Course'}
           </h1>
           <button
             onClick={() => navigate('/courses')}
