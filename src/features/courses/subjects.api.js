@@ -1,21 +1,24 @@
+// src/features/courses/subjects.api.js
 import api from '../../api/client.js';
 
-export const fetchSubjectsByCourse = async ({ course, page = 1 }) => {
-  const params = { page, course };
+export const fetchSubjects = async ({ page = 1, search = '' } = {}) => {
+  const params = {};
+  if (page) params.page = page;
+
+  if (search) {
+    if (search.startsWith('course:')) {
+      params.course = search.split(':')[1];
+    } else if (search.startsWith('course_id:')) {
+      params.course = search.split(':')[1];
+    } else {
+      params.search = search;
+    }
+  }
+
   const res = await api.get('/subjects/', { params });
   return res.data;
-}
-
-// GET /subject-results/?result__class_instance=<classId>[&result=<resultId>]
-export const listSubjectResultsForClass = async ({ classId, resultId, page = 1 }) => {
-  const params = { page, 'result__class_instance': classId };
-  if (resultId) params.result = resultId;
-  const res = await api.get('/subject-results/', { params });
-  return res.data;
 };
 
-// PATCH /subject-results/:id/
-export const patchSubjectResult = async (id, payload) => {
-  const res = await api.patch(`/subject-results/${id}/`, payload);
-  return res.data;
-};
+export const createSubject = async (payload) => (await api.post('/subjects/', payload)).data;
+export const updateSubject = async (id, payload) => (await api.patch(`/subjects/${id}/`, payload)).data;
+export const deleteSubject = async (id) => (await api.delete(`/subjects/${id}/`)).data;
