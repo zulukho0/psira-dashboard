@@ -13,3 +13,4 @@ export const fetchCourses = async ({ page = 1, search = '' } = {}) => {
 export const createCourse = async (payload) => (await api.post('/courses/', payload)).data;
 export const updateCourse = async (id, payload) => (await api.patch(`/courses/${id}/`, payload)).data;
 export const deleteCourse = async (id) => (await api.delete(`/courses/${id}/`)).data;
+export const getCourse = async (id) => (await api.get(`/courses/${id}/`)).data;
