@@ -54,7 +54,6 @@ export default function ManageStudentsPage() {
       navigate("/classes");
     } catch (err) {
       console.error("Failed to update students:", err);
-      // Show more detailed error message
       const errorMessage =
         err?.response?.data?.detail ||
         Object.entries(err?.response?.data || {})
@@ -67,8 +66,6 @@ export default function ManageStudentsPage() {
       setSaving(false);
     }
   };
-
-
 
   const openModal = () => {
     setModalSelection([]);
@@ -125,8 +122,7 @@ export default function ManageStudentsPage() {
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">
-            Manage Students for {classData.course_grade || "Class"} -{" "}
-            {classData.batch_number}
+            Manage Students for {classData.course_grade || "Class"} - {classData.batch_number}
           </h1>
           <button
             onClick={openModal}
@@ -164,18 +160,12 @@ export default function ManageStudentsPage() {
                         className="text-red-600 hover:text-red-800"
                         onClick={async () => {
                           try {
-                            // Remove from backend
                             await removeStudentFromClass(id, student.id);
-                            // Update local state
-                            setSelectedIds((prev) =>
-                              prev.filter((sid) => sid !== student.id)
-                            );
+                            setSelectedIds((prev) => prev.filter((sid) => sid !== student.id));
                           } catch (err) {
                             console.error("Failed to remove student:", err);
                             const errorMessage =
-                              err?.response?.data?.detail ||
-                              err?.message ||
-                              "Failed to remove student";
+                              err?.response?.data?.detail || err?.message || "Failed to remove student";
                             alert(errorMessage);
                           }
                         }}
@@ -241,21 +231,25 @@ export default function ManageStudentsPage() {
                 </thead>
                 <tbody>
                   {filteredModalStudents.length > 0 ? (
-                    filteredModalStudents.map((student) => (
-                      <tr key={student.id} className="hover:bg-gray-50">
-                        <td className="border p-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={modalSelection.includes(student.id)}
-                            onChange={() => toggleModalStudent(student.id)}
-                          />
-                        </td>
-                        <td className="border p-2">{student.first_name}</td>
-                        <td className="border p-2">{student.last_name}</td>
-                        <td className="border p-2">{student.id_number || "—"}</td>
-                        <td className="border p-2">{student.mobile || "—"}</td>
-                      </tr>
-                    ))
+                    filteredModalStudents.map((student) => {
+                      const alreadyAdded = selectedIds.includes(student.id);
+                      return (
+                        <tr key={student.id} className={`hover:bg-gray-50 ${alreadyAdded ? "bg-gray-100" : ""}`}>
+                          <td className="border p-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={modalSelection.includes(student.id)}
+                              disabled={alreadyAdded}
+                              onChange={() => toggleModalStudent(student.id)}
+                            />
+                          </td>
+                          <td className="border p-2">{student.first_name}</td>
+                          <td className="border p-2">{student.last_name}</td>
+                          <td className="border p-2">{student.id_number || "—"}</td>
+                          <td className="border p-2">{student.mobile || "—"}</td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="5" className="text-center p-4 text-gray-500">
