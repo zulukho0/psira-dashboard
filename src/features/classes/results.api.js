@@ -1,26 +1,25 @@
-// src/features/results/results.api.js
 import api from '../../api/client.js';
 
+// GET /results/?class_instance=<id>
 export const listResultsForClass = async ({ classId, page = 1 }) => {
-  const params = { page, class: classId };
+  const params = { page, class_instance: classId };
   const res = await api.get('/results/', { params });
   return res.data;
 };
 
-export const upsertResult = async ({ id, student, classId, subject, score, grade, comments }) => {
-  const payload = {
-    student,
-    class: classId,
-    subject,  
-    score,
-    grade,
-    comments,
-  };
-  if (id) {
-    const res = await api.patch(`/results/${id}/`, payload);
+// POST /results/ { student, class_instance } (creates Result and auto-creates SubjectResults via signal)
+export const getOrCreateResultForStudentClass = async ({ student, class_instance }) => {
+  try {
+    const res = await api.post('/results/', { student, class_instance });
     return res.data;
-  } else {
-    const res = await api.post('/results/', payload);
-    return res.data;
+  } catch (err) {
+    // If already exists, fetch list and return existing
+    if (err?.response?.status === 400 || err?.response?.status === 409) {
+      const list = await listResultsForClass({ classId: class_instance });
+      const items = list?.results || list || [];
+      const existing = items.find((r) => r.student === student);
+      if (existing) return existing;
+    }
+    throw err;
   }
 };
