@@ -5,39 +5,28 @@ import Navbar from "../../../components/Navbar.jsx";
 import { fetchStudents } from "../../students/students.api.js";
 import { fetchClasses, updateClassStudents, removeStudentFromClass } from "../classes.api.js";
 import { getCourse } from "../../courses/courses.api.js";
-
 import {
-  fetchSubjectsByCourse,               
-  listSubjectResultsForClass,          
-  patchSubjectResult,                  
+  fetchSubjectsByCourse,
+  listSubjectResultsForClass,
+  patchSubjectResult,
 } from "../../courses/subjects.api.js";
-
 import {
-  listResultsForClass,                 
-  getOrCreateResultForStudentClass,    
+  listResultsForClass,
+  getOrCreateResultForStudentClass,
 } from "../results.api.js";
 
 export default function ManageClassPage() {
-  const { id } = useParams(); // class id
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  // Meta
   const [classData, setClassData] = useState(null);
   const [course, setCourse] = useState(null);
-  const [subjects, setSubjects] = useState([]); 
-
-  // Students assignment
+  const [subjects, setSubjects] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-
-  // Results and SubjectResults
-  const [resultsByStudent, setResultsByStudent] = useState(new Map()); 
-  const [subjectResultsMap, setSubjectResultsMap] = useState(new Map()); 
-
-  // Local edits for marks
+  const [resultsByStudent, setResultsByStudent] = useState(new Map());
+  const [subjectResultsMap, setSubjectResultsMap] = useState(new Map());
   const [marksEdits, setMarksEdits] = useState({});
-
-  // UI
   const [loading, setLoading] = useState(true);
   const [savingStudents, setSavingStudents] = useState(false);
   const [savingMarks, setSavingMarks] = useState(false);
@@ -55,7 +44,7 @@ export default function ManageClassPage() {
       setLoading(true);
       setError("");
       try {
-        // 1) Load class (list+find; replace with getClass if you add it)
+        // 1) Load class
         const classRes = await fetchClasses({ page: 1, search: "" });
         const cls = classRes.results?.find((c) => c.id === Number(id));
         if (!cls) throw new Error("Class not found");
@@ -67,7 +56,7 @@ export default function ManageClassPage() {
         if (!mounted) return;
         setCourse(courseRes);
 
-        // 3) Subjects (SubjectTemplate) for course
+        // 3) Subjects
         const subsRes = await fetchSubjectsByCourse({ course: cls.course, page: 1 });
         const subs = subsRes?.results || subsRes || [];
         if (!mounted) return;
@@ -79,11 +68,11 @@ export default function ManageClassPage() {
         if (!mounted) return;
         setAllStudents(all);
 
-        // 5) Selected students in class
+        // 5) Selected students
         const currentIds = cls.students?.map((s) => s.id) || [];
         setSelectedIds(currentIds);
 
-        // 6) Existing results for this class
+        // 6) Results
         const resultsRes = await listResultsForClass({ classId: id });
         const resultsList = resultsRes?.results || resultsRes || [];
         const rByStudent = new Map();
@@ -91,7 +80,7 @@ export default function ManageClassPage() {
         if (!mounted) return;
         setResultsByStudent(rByStudent);
 
-        // 7) Existing SubjectResults for this class
+        // 7) SubjectResults
         const srRes = await listSubjectResultsForClass({ classId: id });
         const srList = srRes?.results || srRes || [];
         const srMap = new Map();
@@ -128,12 +117,10 @@ export default function ManageClassPage() {
         student: studentId,
         class_instance: Number(id),
       });
-      // Update map/state
       const newMap = new Map(resultsByStudent);
       newMap.set(studentId, result);
       setResultsByStudent(newMap);
 
-      // Fetch SubjectResults for this new result
       const srRes = await listSubjectResultsForClass({ classId: id, resultId: result.id });
       const srList = srRes?.results || srRes || [];
       setSubjectResultsMap((prev) => {
@@ -181,7 +168,6 @@ export default function ManageClassPage() {
       await removeStudentFromClass(id, studentId);
       setSelectedIds((prev) => prev.filter((sid) => sid !== studentId));
 
-      // Optionally clear marks state for this student
       const result = resultsByStudent.get(studentId);
       if (result) {
         const toDelete = Object.keys(marksEdits).filter((k) => k.startsWith(`${result.id}:`));
@@ -214,12 +200,12 @@ export default function ManageClassPage() {
     setSavingMarks(true);
     setError("");
     try {
-      // Ensure a Result exists for each selected student
+      // Ensure Results exist
       for (const student of selectedStudents) {
         await ensureResultForStudent(student.id);
       }
 
-      // Patch SubjectResults for all edits
+      // Patch SubjectResults
       const patches = [];
       for (const student of selectedStudents) {
         const result = resultsByStudent.get(student.id);
@@ -244,7 +230,7 @@ export default function ManageClassPage() {
 
       await Promise.all(patches);
 
-      // Refresh SRs to reflect calculated totals and updated averages
+      // Refresh SubjectResults
       const srRes = await listSubjectResultsForClass({ classId: id });
       const srList = srRes?.results || srRes || [];
       const srMap = new Map();
@@ -299,7 +285,6 @@ export default function ManageClassPage() {
     <>
       <Navbar />
       <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">
             Manage Class — {course?.title || course?.grade || "Course"} • Class #{classData?.id}
@@ -461,7 +446,6 @@ export default function ManageClassPage() {
         </div>
       </div>
 
-      {/* Add Students Modal */}
       {showModal && (
         <AddStudentsModal
           allStudents={allStudents}
