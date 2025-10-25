@@ -238,9 +238,9 @@ export default function ClassesPage() {
                       </button>
                       <button
                         className="text-green-600 hover:underline text-sm"
-                        onClick={() => navigate(`/classes/${cls.id}/students`)}
+                        onClick={() => navigate(`/classes/${cls.id}/manage`)}
                       >
-                        Manage Students
+                        Manage Class
                       </button>
                     </td>
                   </tr>
